@@ -87,7 +87,6 @@ jobs:
         run: |
           git -C .sidecar-build/src/fastp archive --format=tar.gz --prefix=fastp-v0.23.4/ HEAD > .sidecar-build/fastp-v0.23.4-source.tar.gz
           git -C .sidecar-build/src/hisat2 archive --format=tar.gz --prefix=hisat2-v2.2.3/ HEAD > .sidecar-build/hisat2-v2.2.3-source.tar.gz
-          cp .sidecar-build/subread-source.tar.gz .sidecar-build/
           sha256sum .sidecar-build/*.tar.gz > .sidecar-build/CORRESPONDING_SOURCE_SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
