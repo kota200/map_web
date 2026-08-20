@@ -59,7 +59,19 @@ jobs:
           cp tools/fastp/licenses/fastp-MIT.txt .sidecar-build/licenses/fastp-MIT.txt
           cp tools/hisat2/licenses/HISAT2-GPL-3.0.txt .sidecar-build/licenses/HISAT2-GPL-3.0.txt
           cp tools/featurecounts/licenses/Subread-GPL-3.0.txt .sidecar-build/licenses/Subread-GPL-3.0.txt
-          cp /ucrt64/bin/libisal.dll /ucrt64/bin/libdeflate.dll /ucrt64/bin/libgcc_s_seh-1.dll /ucrt64/bin/libstdc++-6.dll /ucrt64/bin/libwinpthread-1.dll .sidecar-build/out/
+          # Package only DLLs that the actual Windows executables import.
+          # ISA-L and libdeflate may be linked statically, so assuming their
+          # DLL names makes the build fail on otherwise valid MSYS2 releases.
+          runtime_dlls="$(
+            for executable in .sidecar-build/out/*.exe; do
+              ldd "$executable" | sed -n 's#.*=> \(/ucrt64/bin/[^ ]*\.dll\).*#\1#p'
+            done | sort -u
+          )"
+          if [ -n "$runtime_dlls" ]; then
+            while IFS= read -r dll; do
+              cp "$dll" .sidecar-build/out/
+            done <<< "$runtime_dlls"
+          fi
       - name: Verify executable versions and package manifest
         shell: pwsh
         run: |
