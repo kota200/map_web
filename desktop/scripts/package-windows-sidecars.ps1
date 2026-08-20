@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
   [Parameter(Mandatory = $true)][string]$InputDirectory,
-  [Parameter(Mandatory = $true)][string]$OutputDirectory
+  [Parameter(Mandatory = $true)][string]$OutputDirectory,
+  [Parameter(Mandatory = $true)][string]$StaticComponentsPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -37,6 +38,36 @@ function LicenseSha256([string]$relativePath) {
   return (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+$staticComponents = @(
+  Import-Csv -LiteralPath $StaticComponentsPath -Delimiter "`t" | ForEach-Object {
+    $licenseFiles = @(
+      $_.license_files.Split(';', [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object {
+        [ordered]@{ file = $_; sha256 = (LicenseSha256 $_) }
+      }
+    )
+    $linkedInto = @($_.linked_into.Split(';', [System.StringSplitOptions]::RemoveEmptyEntries))
+    if (
+      [string]::IsNullOrWhiteSpace($_.package) -or
+      [string]::IsNullOrWhiteSpace($_.package_version) -or
+      [string]::IsNullOrWhiteSpace($_.source_url) -or
+      [string]::IsNullOrWhiteSpace($_.license) -or
+      $licenseFiles.Count -eq 0 -or
+      $linkedInto.Count -eq 0
+    ) {
+      throw "Incomplete static-link component registration: $($_.package)"
+    }
+    [ordered]@{
+      package = $_.package
+      package_version = $_.package_version
+      source_url = $_.source_url
+      license = $_.license
+      license_files = $licenseFiles
+      linked_into = $linkedInto
+    }
+  }
+)
+if ($staticComponents.Count -eq 0) { throw 'No static-link components were registered.' }
+
 $fastpLicense = 'licenses/fastp-MIT.txt'
 $hisat2License = 'licenses/HISAT2-GPL-3.0.txt'
 $subreadLicense = 'licenses/Subread-GPL-3.0.txt'
@@ -44,6 +75,7 @@ $workflowProvenance = '.github/workflows/windows-sidecars.yml'
 
 $manifest = [ordered]@{
   target = $target
+  static_link_components = $staticComponents
   sidecars = @(
     [ordered]@{ tool = 'Fastp'; file = $fastp.file; sha256 = $fastp.sha256; version = '0.23.4'; source_url = 'https://github.com/OpenGene/fastp/tree/v0.23.4'; source_revision = '1ffcaed6892832c09c4b4094c201cd4eff8fa622'; build_provenance = $workflowProvenance; license = 'MIT'; license_file = $fastpLicense; license_sha256 = (LicenseSha256 $fastpLicense); support_files = $fastpSupport },
     [ordered]@{ tool = 'Hisat2'; file = $hisat2.file; sha256 = $hisat2.sha256; version = '2.2.3'; source_url = 'https://github.com/DaehwanKimLab/hisat2/tree/v2.2.3'; source_revision = '0d244324f98de541bce04d45c75e83bc3522f7f4'; build_provenance = $workflowProvenance; license = 'GPL-3.0-or-later'; license_file = $hisat2License; license_sha256 = (LicenseSha256 $hisat2License); support_files = $hisatSupport },
@@ -51,4 +83,4 @@ $manifest = [ordered]@{
     [ordered]@{ tool = 'FeatureCounts'; file = $featureCounts.file; sha256 = $featureCounts.sha256; version = '2.1.1'; source_url = 'https://sourceforge.net/projects/subread/files/subread-2.1.1/subread-2.1.1-Windows-x86_64.zip/download'; source_revision = 'subread-2.1.1-Windows-x86_64.zip'; build_provenance = $workflowProvenance; license = 'GPL-3.0-or-later'; license_file = $subreadLicense; license_sha256 = (LicenseSha256 $subreadLicense); support_files = @() }
   )
 }
-$manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $OutputDirectory 'sidecars.windows-x86_64.json') -Encoding utf8NoBOM
+$manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $OutputDirectory 'sidecars.windows-x86_64.json') -Encoding utf8NoBOM
