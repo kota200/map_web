@@ -81,6 +81,19 @@ Do not assume disabled code can be omitted from source-archive notices without c
 
 ## Windows desktop sidecars
 
+- `desktop/src-tauri/binaries/fastp-x86_64-pc-windows-msvc.exe` is built from
+  fastp commit `1ffcaed6892832c09c4b4094c201cd4eff8fa622` (version 0.23.4).
+  It is MIT-licensed and statically links the exact MSYS2 packages recorded in
+  `sidecars.windows-x86_64.json`: GCC runtime libraries 16.2.0-3 under the GCC
+  Runtime Library Exception, libwinpthread
+  14.0.0.r283.ga7cb47123-1, ISA-L 2.31.1-1, and libdeflate 1.25-1. Their
+  complete installed license files and SHA-256 values are bundled in
+  `desktop/src-tauri/binaries/licenses` and registered in the manifest.
+- `desktop/src-tauri/binaries/hisat2-x86_64-pc-windows-msvc.exe`,
+  `hisat2-build-x86_64-pc-windows-msvc.exe`, and their four helpers are built
+  from HISAT2 commit `0d244324f98de541bce04d45c75e83bc3522f7f4`
+  (version 2.2.3) plus the checked-in script-free dispatcher. They are
+  GPL-3.0-or-later and statically link the registered GCC runtime libraries.
 - `desktop/src-tauri/binaries/featureCounts-x86_64-pc-windows-msvc.exe` is the
   unmodified `featureCounts` executable from the official
   `subread-2.1.1-Windows-x86_64.zip` package. Its SHA-256 is
@@ -91,9 +104,20 @@ Do not assume disabled code can be omitted from source-archive notices without c
 - Each public desktop release must provide the corresponding source artifact at
   no additional charge and link to it alongside the binary download. Keeping a
   license text in the installer alone is not sufficient.
+- The corresponding fastp, HISAT2, and Subread source archives used by the
+  Windows build, plus their checksum file, are committed under
+  `desktop/corresponding-source/windows-x64`. The workflow and dispatcher source
+  required to reproduce the modified package are also committed. Do not remove
+  or separate these materials from a public binary release.
+- CI run `32385204268` verified that no packaged executable imports an MSYS2
+  runtime DLL. Windows operating-system libraries are not redistributed.
 
 ## Release blockers
 
-- Decide and document how modified HISAT2/Subread corresponding source, build scripts, license texts, and notices will be offered alongside production Web artifacts and future desktop binaries.
-- Generate platform-specific binary checksums and include notices in installers before any desktop release. D1's sidecar manifest now has fields for source URL, license identifier, and bundled license path, but contains no records until verified Windows x64 executables exist.
-- Do not claim license compliance based only on this preliminary inventory.
+- D1 includes Windows x64 checksums, notices, build provenance, and corresponding
+  source. A public installer/release still needs an explicit legal review and a
+  release-process check that binary and source downloads remain available with
+  equivalent access.
+- The WebAssembly distribution obligations remain separate from this desktop
+  package and still require their own production-hosting review.
+- Do not claim legal compliance based only on this engineering inventory.
