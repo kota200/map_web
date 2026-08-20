@@ -11,7 +11,7 @@ use rna_seq_local_desktop::{
     Hisat2Request, RunPlan,
 };
 use std::{fs, path::PathBuf, sync::Arc};
-use tauri::{Emitter, State};
+use tauri::{Emitter, Manager, State};
 use uuid::Uuid;
 
 struct AppState {

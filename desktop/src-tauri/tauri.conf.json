@@ -3,7 +3,7 @@
   "productName": "RNA-seq Local",
   "version": "0.1.0",
   "identifier": "local.rnaseq.desktop",
-  "build": { "frontendDist": "../../" },
+  "build": { "frontendDist": "../frontend" },
   "app": { "windows": [{ "title": "RNA-seq Local" }], "security": { "capabilities": [] } },
   "bundle": {
     "active": false,
