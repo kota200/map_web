@@ -1,0 +1,8 @@
+18e5ee776d796ce1066755e1f446e40082807bb353957d9d4cb9541a2b2e8835  /mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/fastp/inputs/malformed.fastq
+26895b98a3d6f666dd5bb1bd4dcff31666244f2bf020384708fe308d344e26c6  /mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/fastp/inputs/pe.R1.fastq
+7336cc3b1da952d23961d57241a6446ffaa1172e962fe8b4feffab890d40f98a  /mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/fastp/inputs/pe.R2.fastq
+ebb63f119a980cc0a959ff9572a218b2f735e8b0cc73c707e45ab739e3a36a97  /mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/fastp/inputs/se.fastq
+7c8a7ff2bccd48a6c9e8a36f55846e29a531849bd9e328e049af822512346be3  /mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/fastp/inputs/malformed.fastq.gz
+dee898913947074aceb5d25d5716ae03be9f23f6c7eaaeaee5224572bb009f65  /mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/fastp/inputs/pe.R1.fastq.gz
+4ac87ea791de9c017f56cc13ad598db0b76d4012de7c809211ae5e023eb9c804  /mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/fastp/inputs/pe.R2.fastq.gz
+f17f7cb76dbe6e74156fa283038674e29056ac7bf9929fd98fcecfd93fb67f32  /mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/fastp/inputs/se.fastq.gz

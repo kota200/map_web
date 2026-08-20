@@ -1,0 +1,91 @@
+name: Build Windows x64 desktop sidecars
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'desktop/sidecar-dispatcher/**'
+      - 'desktop/scripts/package-windows-sidecars.ps1'
+      - 'tools/fastp/source.lock.json'
+      - 'tools/hisat2/source.lock.json'
+      - 'tools/featurecounts/source.lock.json'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-verify:
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            git make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-zlib
+            mingw-w64-ucrt-x86_64-isa-l mingw-w64-ucrt-x86_64-libdeflate
+      - name: Fetch fixed upstream sources
+        run: |
+          mkdir -p .sidecar-build/src .sidecar-build/out .sidecar-build/licenses
+          git clone https://github.com/OpenGene/fastp.git .sidecar-build/src/fastp
+          git -C .sidecar-build/src/fastp checkout --detach 1ffcaed6892832c09c4b4094c201cd4eff8fa622
+          test "$(git -C .sidecar-build/src/fastp rev-parse HEAD)" = 1ffcaed6892832c09c4b4094c201cd4eff8fa622
+          git clone https://github.com/DaehwanKimLab/hisat2.git .sidecar-build/src/hisat2
+          git -C .sidecar-build/src/hisat2 checkout --detach 0d244324f98de541bce04d45c75e83bc3522f7f4
+          test "$(git -C .sidecar-build/src/hisat2 rev-parse HEAD)" = 0d244324f98de541bce04d45c75e83bc3522f7f4
+          curl -L --fail -o .sidecar-build/subread.zip https://downloads.sourceforge.net/project/subread/subread-2.1.1/subread-2.1.1-Windows-x86_64.zip
+          echo "6392d7c66831cdd767e58251892a79a51b6fab8ed0ba9671ad5e85ff1ab01eaa  .sidecar-build/subread-source.tar.gz" > .sidecar-build/subread-source.sha256
+          curl -L --fail -o .sidecar-build/subread-source.tar.gz https://downloads.sourceforge.net/project/subread/subread-2.1.1/subread-2.1.1-source.tar.gz
+          sha256sum --check .sidecar-build/subread-source.sha256
+      - name: Build fastp, HISAT2, and script-free HISAT2 launchers
+        run: |
+          make -C .sidecar-build/src/fastp -j2
+          cp .sidecar-build/src/fastp/fastp .sidecar-build/out/fastp.exe
+          make -C .sidecar-build/src/hisat2 -j2 hisat2-align-s hisat2-align-l hisat2-build-s hisat2-build-l
+          cp .sidecar-build/src/hisat2/hisat2-align-s .sidecar-build/out/hisat2-align-s.exe
+          cp .sidecar-build/src/hisat2/hisat2-align-l .sidecar-build/out/hisat2-align-l.exe
+          cp .sidecar-build/src/hisat2/hisat2-build-s .sidecar-build/out/hisat2-build-s.exe
+          cp .sidecar-build/src/hisat2/hisat2-build-l .sidecar-build/out/hisat2-build-l.exe
+          g++ -std=c++11 -O2 -municode desktop/sidecar-dispatcher/hisat2_dispatcher.cpp -o .sidecar-build/out/hisat2.exe
+          g++ -std=c++11 -O2 -municode -DHISAT2_BUILD_DISPATCHER desktop/sidecar-dispatcher/hisat2_dispatcher.cpp -o .sidecar-build/out/hisat2-build.exe
+      - name: Stage official featureCounts and licenses
+        run: |
+          unzip -q .sidecar-build/subread.zip -d .sidecar-build/subread
+          cp .sidecar-build/subread/subread-2.1.1-Windows-x86_64/bin/featureCounts.exe .sidecar-build/out/featureCounts.exe
+          cp tools/fastp/licenses/fastp-MIT.txt .sidecar-build/licenses/fastp-MIT.txt
+          cp tools/hisat2/licenses/HISAT2-GPL-3.0.txt .sidecar-build/licenses/HISAT2-GPL-3.0.txt
+          cp tools/featurecounts/licenses/Subread-GPL-3.0.txt .sidecar-build/licenses/Subread-GPL-3.0.txt
+          cp /ucrt64/bin/libisal.dll /ucrt64/bin/libdeflate.dll /ucrt64/bin/libgcc_s_seh-1.dll /ucrt64/bin/libstdc++-6.dll /ucrt64/bin/libwinpthread-1.dll .sidecar-build/out/
+      - name: Verify executable versions and package manifest
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          .\.sidecar-build\out\fastp.exe --version
+          .\.sidecar-build\out\hisat2.exe --version
+          .\.sidecar-build\out\hisat2-build.exe --version
+          .\.sidecar-build\out\featureCounts.exe -v
+          Copy-Item .sidecar-build\licenses -Destination .sidecar-build\out\licenses -Recurse
+          .\desktop\scripts\package-windows-sidecars.ps1 -InputDirectory .sidecar-build\out -OutputDirectory .sidecar-build\package
+          Copy-Item .sidecar-build\licenses -Destination .sidecar-build\package\licenses -Recurse
+      - name: Archive corresponding source and build evidence
+        run: |
+          git -C .sidecar-build/src/fastp archive --format=tar.gz --prefix=fastp-v0.23.4/ HEAD > .sidecar-build/fastp-v0.23.4-source.tar.gz
+          git -C .sidecar-build/src/hisat2 archive --format=tar.gz --prefix=hisat2-v2.2.3/ HEAD > .sidecar-build/hisat2-v2.2.3-source.tar.gz
+          cp .sidecar-build/subread-source.tar.gz .sidecar-build/
+          sha256sum .sidecar-build/*.tar.gz > .sidecar-build/CORRESPONDING_SOURCE_SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-sidecars-windows-x64
+          path: .sidecar-build/package
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-sidecars-windows-x64-corresponding-source
+          path: |
+            .sidecar-build/*-source.tar.gz
+            .sidecar-build/CORRESPONDING_SOURCE_SHA256SUMS
+          if-no-files-found: error

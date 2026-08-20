@@ -1,0 +1,14 @@
+{
+  "source": "/mnt/c/Users/0314k/Desktop/mapping_app/example_data/TAIR12_1Feb26.gff3.gz",
+  "output": "/mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/tools/w6-validation/.representative-hisat2.OcOZyHQx/annotation.gtf",
+  "contigs": [
+    "Chr1",
+    "Chr2",
+    "Chr3",
+    "Chr4",
+    "Chr5"
+  ],
+  "transcripts": 271170,
+  "exons": 248190,
+  "unresolved_exons": 0
+}

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rna-seq-local.invalid/contracts/sample.schema.json",
+  "title": "RNA-seq analysis sample",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "read_mode", "inputs"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^[^\\t\\r\\n]+$"
+    },
+    "read_mode": {
+      "enum": ["single-end", "paired-end"]
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "single": { "$ref": "#/$defs/files" },
+        "r1": { "$ref": "#/$defs/files" },
+        "r2": { "$ref": "#/$defs/files" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "read_mode": { "const": "single-end" } } },
+      "then": {
+        "properties": {
+          "inputs": { "required": ["single"] }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "read_mode": { "const": "paired-end" } } },
+      "then": {
+        "properties": {
+          "inputs": { "required": ["r1", "r2"] }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/file" }
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["basename", "size_bytes"],
+      "properties": {
+        "basename": { "type": "string", "minLength": 1 },
+        "size_bytes": { "type": "integer", "minimum": 0 },
+        "content_encoding": { "enum": ["identity", "gzip"] },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    }
+  }
+}

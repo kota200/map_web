@@ -1,0 +1,22 @@
+[
+  "--in1",
+  "/input/read1.fastq.gz",
+  "--out1",
+  "/output/se.cleaned.fastq.gz",
+  "--json",
+  "/output/se.fastp.json",
+  "--html",
+  "/output/se.fastp.html",
+  "--report_title",
+  "fastp W2 SE fixture",
+  "--thread",
+  "1",
+  "--dont_eval_duplication",
+  "--disable_trim_poly_g",
+  "--length_required",
+  "15",
+  "--compression",
+  "4",
+  "--adapter_sequence",
+  "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA"
+]

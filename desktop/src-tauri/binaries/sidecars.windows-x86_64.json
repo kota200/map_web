@@ -1,0 +1,15 @@
+{
+  "target": "x86_64-pc-windows-msvc",
+  "sidecars": [
+    {
+      "tool": "FeatureCounts",
+      "file": "featureCounts-x86_64-pc-windows-msvc.exe",
+      "sha256": "30cf41c2bac4707754b4d7faab96743a16957bdb21ecee82e64fd941905185d9",
+      "version": "2.1.1",
+      "source_url": "https://sourceforge.net/projects/subread/files/subread-2.1.1/subread-2.1.1-Windows-x86_64.zip/download",
+      "license": "GPL-3.0-or-later",
+      "license_file": "licenses/Subread-GPL-3.0.txt",
+      "support_files": []
+    }
+  ]
+}

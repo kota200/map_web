@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "environment": "local-test",
+  "production_configured": false,
+  "catalog_url": "../test-data/index-catalog/catalog.v1.test.json"
+}

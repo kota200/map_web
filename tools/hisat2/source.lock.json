@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "hisat2": {
+    "version": "2.2.3",
+    "tag": "v2.2.3",
+    "repository": "https://github.com/DaehwanKimLab/hisat2.git",
+    "commit": "0d244324f98de541bce04d45c75e83bc3522f7f4",
+    "canonicalGitArchiveSha256": "20158b4edfb7f2a2324d0d7f252e9833b2af9b66ec620a59e84adb336f9d4e38",
+    "license": "GPL-3.0-or-later",
+    "licenseSha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+  },
+  "nativeBaseline": {
+    "os": "Ubuntu 22.04.5 LTS (WSL2 x86_64)",
+    "compiler": "g++ 11.4.0"
+  },
+  "wasmToolchain": {
+    "emsdkRepository": "https://github.com/emscripten-core/emsdk.git",
+    "emsdkCommit": "bfce6709931a9381d91e6cd75c422dec2188fbf2",
+    "emscriptenVersion": "6.0.6",
+    "emscriptenCommit": "ce75e06884093bcefb86a6b8fd56a5d62a4cc245",
+    "releaseBundle": "833aa203ba2283fc2b6adb504a79a3a0d692df81"
+  }
+}

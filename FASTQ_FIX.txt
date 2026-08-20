@@ -1,0 +1,9 @@
+kallisto-web v9 FASTQ fix
+
+Changes from v8:
+1. Corrected malformed bundled test FASTQ quality strings. In v8, quality lengths were 35 for reads whose sequence lengths were 32-34.
+2. Added browser-side FASTQ structural preflight for the first few records (including best-effort gzip inspection where DecompressionStream is available).
+3. Added WORKERFS mounted-file size diagnostics before kallisto starts.
+4. Added a specific diagnostic when kallisto reports "processed 0 reads".
+
+No change to kallisto/Bifrost WebAssembly compilation is required for this fix.

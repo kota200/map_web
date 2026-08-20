@@ -1,0 +1,13 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "RNA-seq Local",
+  "version": "0.1.0",
+  "identifier": "local.rnaseq.desktop",
+  "build": { "frontendDist": "../../" },
+  "app": { "windows": [{ "title": "RNA-seq Local" }], "security": { "capabilities": [] } },
+  "bundle": {
+    "active": false,
+    "externalBin": ["binaries/fastp", "binaries/hisat2", "binaries/hisat2-build", "binaries/featureCounts"],
+    "resources": ["binaries/sidecars.windows-x86_64.json"]
+  }
+}

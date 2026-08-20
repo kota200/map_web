@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-14",
+  "nativeBaseline": {
+    "path": ".w2-cache/sources/subread-2.1.1/src/featureCounts",
+    "sha256": "390b9ba96f7120ba7fa0f21dc17e904255b15f3a7c5eed8796b176f007ed8252",
+    "bytes": 3062008,
+    "distributed": false
+  },
+  "web": {
+    "javascript": {
+      "path": "tools/featurecounts/dist/featureCounts.mjs",
+      "sha256": "7a184391ea93a5ae343b01586144e18e0b82dcadc67b27de35cc7913d9255e70",
+      "bytes": 227110
+    },
+    "wasm": {
+      "path": "tools/featurecounts/dist/featureCounts.wasm",
+      "sha256": "c8f18b36dd0d1a30e4250d313df4c52229d05adf7e6562f365621b8f721262ec",
+      "bytes": 293120
+    },
+    "flags": [
+      "-O3",
+      "-g2",
+      "-pthread",
+      "-sUSE_ZLIB=1",
+      "-sASSERTIONS=2",
+      "-sMODULARIZE=1",
+      "-sEXPORT_ES6=1",
+      "-sENVIRONMENT=worker,node",
+      "-sINVOKE_RUN=0",
+      "-sEXIT_RUNTIME=1",
+      "-sFORCE_FILESYSTEM=1",
+      "-sALLOW_MEMORY_GROWTH=1",
+      "-sINITIAL_MEMORY=134217728",
+      "-sMAXIMUM_MEMORY=2147483648",
+      "-sSTACK_SIZE=8388608",
+      "-sPTHREAD_POOL_SIZE=4",
+      "-lworkerfs.js"
+    ]
+  },
+  "reproducibility": {
+    "consecutiveBuilds": 2,
+    "javascriptShaMatched": true,
+    "wasmShaMatched": true
+  }
+}

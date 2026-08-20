@@ -1,0 +1,25 @@
+kallisto Web v10
+===============
+
+Implemented requested items 1-3:
+
+1) Browser timing
+- Worker performance.now() timings.
+- C++ [WEBPERF] quant-stage checkpoints.
+- New browser_performance.json output.
+- Threads UI expanded to 1-8 for -t1/-t2/-t4/-t8 benchmarking.
+
+2) Optimization
+- -O3
+- -flto
+- -msimd128
+- pthread pool 8
+- keeps native MEMORY64=1 and 8 MiB stacks.
+
+3) Compression
+- Emscripten stock zlib (-sUSE_ZLIB=1) removed from the v10 release link.
+- kallisto vendored zlib-ng built in-tree with ZLIB_COMPAT=ON and gzFile API enabled.
+
+Recompile required:
+  source ~/emsdk/emsdk_env.sh
+  bash build/build-wasm.sh

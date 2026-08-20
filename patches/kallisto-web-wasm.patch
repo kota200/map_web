@@ -1,0 +1,941 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 8a7c700..96b05cb 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -70,7 +70,7 @@ else()
+ endif()
+ 
+ #add_compile_options(-Wall -Wno-unused-function)
+-add_compile_options(-Wno-deprecated-declarations -Wno-subobject-linkage) # Suppress bifrost warning
++add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations> $<$<COMPILE_LANGUAGE:CXX>:-Wno-subobject-linkage>) # Suppress bifrost warning
+ set(PROJECT_BIFROST_CMAKE_CXX_FLAGS "-Wno-subobject-linkage -Wno-return-type") # Suppress bifrost warning
+ 
+ if(LINK MATCHES static)
+@@ -80,15 +80,45 @@ ELSE(LINK MATCHES shared)
+ ENDIF(LINK MATCHES static)
+ 
+ 
++# KALLISTO_WEB_WASM_PATCH_V10
++if(EMSCRIPTEN)
++    message(STATUS "Configuring kallisto for WebAssembly v10")
++    message(STATUS "Using vendored zlib-ng in zlib-compatible mode")
++
++    set(ZLIBNG ON CACHE BOOL "Use vendored zlib-ng" FORCE)
++    set(ZLIB_COMPAT ON CACHE BOOL "Expose zlib-compatible API" FORCE)
++    set(ZLIB_ENABLE_TESTS OFF CACHE BOOL "Disable zlib-ng tests" FORCE)
++    set(WITH_GZFILEOP ON CACHE BOOL "Enable gzFile API" FORCE)
++    set(WITH_NATIVE_INSTRUCTIONS OFF CACHE BOOL "No native host ISA in Wasm build" FORCE)
++    set(WITH_SANITIZER OFF CACHE STRING "Disable zlib-ng sanitizers" FORCE)
++    # Belt-and-suspenders: these should not exist after the generic Wasm arch
++    # override, but force them OFF if an upstream zlib-ng revision defines them.
++    set(WITH_AVX2 OFF CACHE BOOL "No x86 AVX2 in WebAssembly" FORCE)
++    set(WITH_AVX512 OFF CACHE BOOL "No x86 AVX512 in WebAssembly" FORCE)
++    set(WITH_AVX512VNNI OFF CACHE BOOL "No x86 AVX512 VNNI in WebAssembly" FORCE)
++    set(WITH_SSE2 OFF CACHE BOOL "No x86 SSE2 in WebAssembly" FORCE)
++    set(WITH_SSSE3 OFF CACHE BOOL "No x86 SSSE3 in WebAssembly" FORCE)
++    set(WITH_SSE41 OFF CACHE BOOL "No x86 SSE4.1 in WebAssembly" FORCE)
++    set(WITH_SSE42 OFF CACHE BOOL "No x86 SSE4.2 in WebAssembly" FORCE)
++    set(WITH_PCLMULQDQ OFF CACHE BOOL "No x86 PCLMUL in WebAssembly" FORCE)
++    set(WITH_VPCLMULQDQ OFF CACHE BOOL "No x86 VPCLMUL in WebAssembly" FORCE)
++    set(WITH_BENCHMARKS OFF CACHE BOOL "Disable zlib-ng benchmarks" FORCE)
++    set(WITH_BENCHMARK_APPS OFF CACHE BOOL "Disable zlib-ng benchmark apps" FORCE)
++    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Static libraries for Wasm" FORCE)
++
++    add_subdirectory(${EXT_PROJECTS_DIR}/zlib-ng ${CMAKE_BINARY_DIR}/zlib-ng)
++    target_compile_options(zlib PRIVATE -O3 -flto -msimd128)
++    include_directories(${EXT_PROJECTS_DIR}/bifrost/src)
++    add_subdirectory(${EXT_PROJECTS_DIR}/bifrost)
++else()
+ include(ExternalProject)
+ if (USE_BAM)
+ ExternalProject_Add(htslib
+     PREFIX ${PROJECT_SOURCE_DIR}/ext/htslib
+     SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/htslib
+     BUILD_IN_SOURCE 1
+-    CONFIGURE_COMMAND "" #autoreconf -i && autoheader &&  autoconf && ${PROJECT_SOURCE_DIR}/ext/htslib/configure
+-        #--prefix=${PREFIX} --disable-bz2 --disable-lzma --disable-libcurl
+-    BUILD_COMMAND "" #make lib-static
++    CONFIGURE_COMMAND ""
++    BUILD_COMMAND ""
+     INSTALL_COMMAND ""
+ )
+ endif(USE_BAM)
+@@ -119,10 +149,9 @@ if (USE_BAM)
+ endif(USE_BAM)
+ 
+ include_directories(${EXT_PROJECTS_DIR}/bifrost/build/src)
+-
+ ExternalProject_Get_Property(bifrost install_dir)
+ include_directories(${install_dir}/src)
+-
++endif()
+ 
+ 
+ 
+diff --git a/ext/bifrost/CMakeLists.txt b/ext/bifrost/CMakeLists.txt
+index a605f7c..7ce8632 100644
+--- a/ext/bifrost/CMakeLists.txt
++++ b/ext/bifrost/CMakeLists.txt
+@@ -35,8 +35,10 @@ endif(COMPILATION_ARCH MATCHES "OFF")
+ 
+ if(ENABLE_AVX2 MATCHES "OFF")
+ 	message("Disabling AVX2 instructions")
+-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mno-avx2")
+-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mno-avx2")
++	if(NOT EMSCRIPTEN)
++		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mno-avx2")
++		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mno-avx2")
++	endif()
+ endif(ENABLE_AVX2 MATCHES "OFF")
+ 
+ # Manages build types
+diff --git a/ext/bifrost/src/CMakeLists.txt b/ext/bifrost/src/CMakeLists.txt
+index 2bbfa0c..f4736b4 100755
+--- a/ext/bifrost/src/CMakeLists.txt
++++ b/ext/bifrost/src/CMakeLists.txt
+@@ -21,21 +21,26 @@ find_package(Threads REQUIRED)
+ target_link_libraries(bifrost_static pthread)
+ target_link_libraries(bifrost_dynamic pthread)
+ 
+-find_package(ZLIB REQUIRED)
+-target_link_libraries(bifrost_static ${ZLIB_LIBRARIES})
+-target_link_libraries(bifrost_dynamic ${ZLIB_LIBRARIES})
+-
+-if (ZLIB_FOUND)
+-    if (DEFINED ZLIB_INCLUDE_DIRS)
+-        include_directories( ${ZLIB_INCLUDE_DIRS} )
+-    elseif (DEFINED ZLIB_INCLUDE_DIR)
+-        include_directories( ${ZLIB_INCLUDE_DIR} )
+-    else()
+-        message(FATAL_ERROR "zlib found but no include directories are set.")
+-    endif()
++if(EMSCRIPTEN)
++    target_link_libraries(bifrost_static zlibstatic)
++    target_link_libraries(bifrost_dynamic zlibstatic)
+ else()
+-    message(FATAL_ERROR "zlib not found. Required for to output files")
+-endif(ZLIB_FOUND)
++    find_package(ZLIB REQUIRED)
++    target_link_libraries(bifrost_static ${ZLIB_LIBRARIES})
++    target_link_libraries(bifrost_dynamic ${ZLIB_LIBRARIES})
++
++    if (ZLIB_FOUND)
++        if (DEFINED ZLIB_INCLUDE_DIRS)
++            include_directories( ${ZLIB_INCLUDE_DIRS} )
++        elseif (DEFINED ZLIB_INCLUDE_DIR)
++            include_directories( ${ZLIB_INCLUDE_DIR} )
++        else()
++            message(FATAL_ERROR "zlib found but no include directories are set.")
++        endif()
++    else()
++        message(FATAL_ERROR "zlib not found. Required for to output files")
++    endif(ZLIB_FOUND)
++endif()
+ 
+ target_link_libraries(Bifrost bifrost_dynamic)
+ 
+diff --git a/ext/bifrost/src/DataStorage.tcc b/ext/bifrost/src/DataStorage.tcc
+index 764c9b5..b871b89 100755
+--- a/ext/bifrost/src/DataStorage.tcc
++++ b/ext/bifrost/src/DataStorage.tcc
+@@ -78,7 +78,7 @@ DataStorage<U>::DataStorage(const DataStorage& o) : color_sets(nullptr), shared_
+ 
+         unitig_cs_link = new std::atomic<uint64_t>[sz_link];
+ 
+-        for (size_t i = 0; i != sz_link; ++i) unitig_cs_link[i] = o.sz_link[i].load();
++        for (size_t i = 0; i != sz_link; ++i) unitig_cs_link[i] = o.unitig_cs_link[i].load();
+     }
+ 
+     if ((o.data != nullptr) && (o.sz_cs != 0)){
+diff --git a/ext/zlib-ng/CMakeLists.txt b/ext/zlib-ng/CMakeLists.txt
+index 8ca63a3..aedadad 100644
+--- a/ext/zlib-ng/CMakeLists.txt
++++ b/ext/zlib-ng/CMakeLists.txt
+@@ -47,6 +47,27 @@ include(CMakeDependentOption)
+ include(FeatureSummary)
+ 
+ include(cmake/detect-arch.cmake)
++
++# KALLISTO_WEB_ZLIBNG_WASM_ARCH_FIX
++if(EMSCRIPTEN)
++    message(STATUS "zlib-ng: forcing generic WebAssembly architecture (no x86 CPUID/AVX/SSE sources)")
++    set(ARCH "wasm64")
++    set(BASEARCH "wasm")
++    unset(BASEARCH_X86_FOUND)
++    unset(BASEARCH_ARM_FOUND)
++    unset(BASEARCH_PPC_FOUND)
++    unset(BASEARCH_S360_FOUND)
++    unset(BASEARCH_ALPHA_FOUND)
++    unset(BASEARCH_BLACKFIN_FOUND)
++    unset(BASEARCH_IA64_FOUND)
++    unset(BASEARCH_MIPS_FOUND)
++    unset(BASEARCH_M68K_FOUND)
++    unset(BASEARCH_SH_FOUND)
++    unset(BASEARCH_SPARC_FOUND)
++    unset(BASEARCH_PARISC_FOUND)
++    unset(BASEARCH_RS6000_FOUND)
++    unset(BASEARCH_RISCV_FOUND)
++endif()
+ include(cmake/detect-install-dirs.cmake)
+ include(cmake/detect-coverage.cmake)
+ include(cmake/detect-intrinsics.cmake)
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 71fd444..eba4904 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -18,6 +18,43 @@ target_include_directories(kallisto_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+ 
+ add_executable(kallisto main.cpp ${sources} ${headers})
+ 
++# KALLISTO_WEB_WASM_PATCH_V10
++if(EMSCRIPTEN)
++    target_link_libraries(kallisto_core PUBLIC zlibstatic)
++    target_link_libraries(kallisto PRIVATE kallisto_core bifrost_static zlibstatic)
++
++    target_compile_options(kallisto_core PRIVATE -pthread -sMEMORY64=1)
++    target_compile_options(kallisto PRIVATE -pthread -sMEMORY64=1)
++
++    # Selective optimization: keep KmerIndex.cpp/Bifrost at plain -O3.
++    set_source_files_properties(
++        ProcessReads.cpp MinCollector.cpp weights.cpp main.cpp
++        PROPERTIES COMPILE_OPTIONS "-flto;-msimd128"
++    )
++
++    target_link_options(kallisto PRIVATE
++        -sMEMORY64=1
++        -pthread
++        -sMODULARIZE=1
++        -sEXPORT_NAME=createKallisto
++        -sINVOKE_RUN=0
++        -sEXIT_RUNTIME=0
++        -sALLOW_MEMORY_GROWTH=1
++        -sINITIAL_MEMORY=268435456
++        -sMAXIMUM_MEMORY=3221225472
++        -sASSERTIONS=1
++        -sSTACK_SIZE=8388608
++        -sDEFAULT_PTHREAD_STACK_SIZE=8388608
++        -sPTHREAD_POOL_SIZE=9
++        -sFORCE_FILESYSTEM=1
++        "-sEXPORTED_RUNTIME_METHODS=['FS','WORKERFS','callMain']"
++        "-sINCOMING_MODULE_JS_API=['ENVIRONMENT','arguments','canvas','dynamicLibraries','elementPointerLock','instantiateWasm','locateFile','monitorRunDependencies','noExitRuntime','noInitialRun','onAbort','onExit','onRuntimeInitialized','postRun','preInit','preRun','print','printErr','setStatus','statusMessage','stderr','stdin','stdout','thisProgram','wasm','websocket','mainScriptUrlOrBlob']"
++        -lworkerfs.js
++        -sENVIRONMENT=worker
++    )
++    return()
++endif()
++
+ find_package( Threads REQUIRED )
+ ExternalProject_Get_Property(bifrost install_dir)
+ if (USE_BAM)
+diff --git a/src/KmerIndex.cpp b/src/KmerIndex.cpp
+index 4bfd9c5..27a9e67 100644
+--- a/src/KmerIndex.cpp
++++ b/src/KmerIndex.cpp
+@@ -1441,12 +1441,18 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
+     k = dbg.getK();
+   }
+   std::cerr << "[index] k-mer length: " << std::to_string(k) << std::endl;
++  std::cerr << "[WEBPERF] index_graph_loaded" << std::endl;
+ 
+   // 2.2 deserialize distinguishing flanking k-mers for D-list
+   uint64_t dlist_size;
+   uint64_t dlist_overhang;
+   in.read((char*)&dlist_size, sizeof(dlist_size));
+   in.read((char*)&dlist_overhang, sizeof(dlist_overhang));
++  if (!in.good()) {
++    std::cerr << "Error: truncated/corrupt index immediately after graph/MPHF" << std::endl;
++    exit(1);
++  }
++  std::cerr << "[WEBPERF] index_dlist_header size=" << dlist_size << " overhang=" << dlist_overhang << std::endl;
+   d_list.reserve(dlist_size);
+   for (size_t i = 0; i < dlist_size; i++) {
+     Kmer dfk;
+@@ -1462,11 +1468,18 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
+     }
+   }
+ 
++  std::cerr << "[WEBPERF] index_dlist_loaded" << std::endl;
++
+   // 3. deserialize nodes
+   Kmer kmer;
+   size_t kmer_size = k * sizeof(char);
+   char* buffer = new char[kmer_size];
+   in.read((char*)&tmp_size, sizeof(tmp_size));
++  if (!in.good()) {
++    std::cerr << "Error: truncated/corrupt index before node records" << std::endl;
++    exit(1);
++  }
++  std::cerr << "[WEBPERF] index_node_records=" << tmp_size << " graph_unitigs=" << dbg.size() << std::endl;
+   const size_t max_num_nodes_buffer = 524288;
+   std::vector<std::pair<char*, std::pair<Kmer, uint32_t>>> in_buf_v;
+   in_buf_v.reserve(max_num_nodes_buffer);
+@@ -1533,6 +1546,11 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
+   std::vector<std::pair<char*, std::pair<Kmer, uint32_t>>>().swap(
+       in_buf_v);  // potentially free up memory
+   std::vector<std::thread>().swap(workers);
++  if (!in.good()) {
++    std::cerr << "Error: truncated/corrupt index while deserializing node metadata" << std::endl;
++    exit(1);
++  }
++  std::cerr << "[WEBPERF] index_nodes_loaded" << std::endl;
+ 
+   // 4. read number of targets
+   in.read((char*)&num_trans, sizeof(num_trans));
+diff --git a/src/ProcessReads.cpp b/src/ProcessReads.cpp
+index 861186b..ecdf034 100644
+--- a/src/ProcessReads.cpp
++++ b/src/ProcessReads.cpp
+@@ -1,6 +1,7 @@
+ #include "ProcessReads.h"
+ 
+ #include <algorithm>
++#include <chrono>
+ #include <fstream>
+ #include <iomanip>
+ #include <limits>
+@@ -313,8 +314,21 @@ int64_t ProcessBUSReads(MasterProcessor &MP, const ProgramOptions &opt) {
+ /** -- read processors -- **/
+ 
+ void MasterProcessor::processReads() {
++#ifdef __EMSCRIPTEN__
++  const bool paired_parallel_gzip = !opt.batch_mode && !opt.bus_mode && !opt.single_end &&
++                                    opt.threads > 1 && !opt.pseudobam && !opt.fusion && !opt.bam;
++  std::cerr << "[WEBPERF] active_read_workers=" << opt.threads
++            << " paired_parallel_gzip=" << (paired_parallel_gzip ? 1 : 0) << std::endl;
++#endif
+   // start worker threads
+   if (!opt.batch_mode && !opt.bus_mode) {
++#ifdef __EMSCRIPTEN__
++    FastqSequenceReader *paired_reader = nullptr;
++    if (paired_parallel_gzip) {
++      paired_reader = static_cast<FastqSequenceReader *>(SR);
++      paired_reader->startPairedReaderHelper();
++    }
++#endif
+     std::vector<std::thread> workers;
+     for (int i = 0; i < opt.threads; i++) {
+       workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, -1, i)));
+@@ -324,6 +338,11 @@ void MasterProcessor::processReads() {
+     for (int i = 0; i < opt.threads; i++) {
+       workers[i].join();  // wait for them to finish
+     }
++#ifdef __EMSCRIPTEN__
++    if (paired_reader) {
++      paired_reader->stopPairedReaderHelper();
++    }
++#endif
+ 
+     // now handle the modification of the mincollector
+     for (auto &t : newECcount) {
+@@ -972,25 +991,71 @@ ReadProcessor::~ReadProcessor() {
+ }
+ 
+ void ReadProcessor::operator()() {
++#ifdef __EMSCRIPTEN__
++  const auto web_thread_started = std::chrono::steady_clock::now();
++  auto finish_web_stats = [&]() {
++    web_total_us = std::chrono::duration_cast<std::chrono::microseconds>(
++                       std::chrono::steady_clock::now() - web_thread_started)
++                       .count();
++    reportWebThreadStats();
++  };
++#endif
+   while (true) {
+     int readbatch_id;
+     // grab the reader lock
+     if (mp.opt.batch_mode) {
+       if (batchSR.empty()) {
++#ifdef __EMSCRIPTEN__
++        finish_web_stats();
++#endif
+         return;
+       } else {
++#ifdef __EMSCRIPTEN__
++        const auto fetch_started = std::chrono::steady_clock::now();
++#endif
+         batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id,
+                                mp.opt.pseudobam);
++#ifdef __EMSCRIPTEN__
++        web_fetch_us += std::chrono::duration_cast<std::chrono::microseconds>(
++                            std::chrono::steady_clock::now() - fetch_started)
++                            .count();
++#endif
+       }
+     } else {
+-      std::lock_guard<std::mutex> lock(mp.reader_lock);
++#ifdef __EMSCRIPTEN__
++      const auto wait_started = std::chrono::steady_clock::now();
++#endif
++      std::unique_lock<std::mutex> lock(mp.reader_lock);
++#ifdef __EMSCRIPTEN__
++      web_reader_wait_us += std::chrono::duration_cast<std::chrono::microseconds>(
++                                std::chrono::steady_clock::now() - wait_started)
++                                .count();
++#endif
+       if (mp.SR->empty()) {
+         // nothing to do
++#ifdef __EMSCRIPTEN__
++        lock.unlock();
++        finish_web_stats();
++#endif
+         return;
+       } else {
+         // get new sequences
++#ifdef __EMSCRIPTEN__
++        const auto fetch_started = std::chrono::steady_clock::now();
++        if (paired && mp.opt.threads > 1 && !mp.opt.pseudobam && !mp.opt.fusion &&
++            !mp.opt.bam) {
++          static_cast<FastqSequenceReader *>(mp.SR)->fetchPairedSequencesParallel(
++              buffer, bufsize, seqs, flags, readbatch_id);
++        } else {
++#endif
+         mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id,
+                               mp.opt.pseudobam || mp.opt.fusion);
++#ifdef __EMSCRIPTEN__
++        }
++        web_fetch_us += std::chrono::duration_cast<std::chrono::microseconds>(
++                            std::chrono::steady_clock::now() - fetch_started)
++                            .count();
++#endif
+       }
+ 
+       // release the reader lock
+@@ -998,17 +1063,47 @@ void ReadProcessor::operator()() {
+     pseudobatch.aln.clear();
+     pseudobatch.batch_id = readbatch_id;
+     // process our sequences
++#ifdef __EMSCRIPTEN__
++    const auto process_started = std::chrono::steady_clock::now();
++#endif
+     processBuffer();
++#ifdef __EMSCRIPTEN__
++    web_process_us += std::chrono::duration_cast<std::chrono::microseconds>(
++                          std::chrono::steady_clock::now() - process_started)
++                          .count();
++    const auto update_started = std::chrono::steady_clock::now();
++#endif
+ 
+     // update the results, MP acquires the lock
+     std::vector<BUSData> tmp_v{};
+-    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size() / 2 : seqs.size(), flens,
+-              unmapped_list, flens_lr, flens_lr_c, bias5, pseudobatch, tmp_v,
++    const size_t reads_in_batch = paired ? seqs.size() / 2 : seqs.size();
++    mp.update(counts, newEcs, ec_umi, new_ec_umi, reads_in_batch, flens, unmapped_list, flens_lr,
++              flens_lr_c, bias5, pseudobatch, tmp_v,
+               std::vector<std::pair<BUSData, Roaring>>{}, nullptr, nullptr, id, local_id);
++#ifdef __EMSCRIPTEN__
++    web_update_us += std::chrono::duration_cast<std::chrono::microseconds>(
++                         std::chrono::steady_clock::now() - update_started)
++                         .count();
++    web_batches++;
++    web_reads += reads_in_batch;
++#endif
+     clear();
+   }
+ }
+ 
++#ifdef __EMSCRIPTEN__
++void ReadProcessor::reportWebThreadStats() {
++  if (web_stats_reported) {
++    return;
++  }
++  web_stats_reported = true;
++  std::lock_guard<std::mutex> lock(mp.writer_lock);
++  std::cerr << "[WEBPERF] worker_stats id=" << local_id << " batches=" << web_batches
++            << " reads=" << web_reads << " reader_wait_us=" << web_reader_wait_us
++            << " fetch_us=" << web_fetch_us << " process_us=" << web_process_us
++            << " update_us=" << web_update_us << " total_us=" << web_total_us << std::endl;
++}
++#endif
+ void ReadProcessor::processBuffer() {
+   // set up thread variables
+   std::vector<std::pair<const_UnitigMap<Node>, int32_t>> v1, v2;
+@@ -1326,7 +1421,9 @@ void ReadProcessor::processBuffer() {
+ 
+ void ReadProcessor::clear() {
+   numreads = 0;
++#ifndef __EMSCRIPTEN__
+   memset(buffer, 0, bufsize);
++#endif
+   newEcs.clear();
+   flens_lr.clear();
+   flens_lr_c.clear();
+@@ -3298,6 +3395,9 @@ void SequenceReader::reset() {
+ }
+ 
+ FastqSequenceReader::~FastqSequenceReader() {
++#ifdef __EMSCRIPTEN__
++  stopPairedReaderHelper();
++#endif
+   for (auto &f : fp) {
+     if (f) {
+       gzclose(f);
+@@ -3335,6 +3435,10 @@ void FastqSequenceReader::reset() {
+     kseq_destroy(s);
+     s = nullptr;
+   }
++#ifdef __EMSCRIPTEN__
++  paired_pending[0].clear();
++  paired_pending[1].clear();
++#endif
+ }
+ 
+ void FastqSequenceReader::reserveNfiles(int n) {
+@@ -3344,6 +3448,223 @@ void FastqSequenceReader::reserveNfiles(int n) {
+   seq.resize(nfiles, nullptr);
+ }
+ 
++#ifdef __EMSCRIPTEN__
++void FastqSequenceReader::startPairedReaderHelper() {
++  if (paired_reader_helper.joinable()) {
++    return;
++  }
++  paired_reader_stop = false;
++  paired_reader_task_ready = false;
++  paired_reader_task_done = false;
++  paired_reader_helper = std::thread([this]() {
++    while (true) {
++      std::function<void()> task;
++      {
++        std::unique_lock<std::mutex> lock(paired_reader_helper_mutex);
++        paired_reader_helper_cv.wait(lock, [this]() {
++          return paired_reader_task_ready || paired_reader_stop;
++        });
++        if (paired_reader_stop && !paired_reader_task_ready) {
++          return;
++        }
++        task = std::move(paired_reader_task);
++        paired_reader_task_ready = false;
++      }
++      task();
++      {
++        std::lock_guard<std::mutex> lock(paired_reader_helper_mutex);
++        paired_reader_task_done = true;
++      }
++      paired_reader_done_cv.notify_one();
++    }
++  });
++}
++
++void FastqSequenceReader::stopPairedReaderHelper() {
++  if (!paired_reader_helper.joinable()) {
++    return;
++  }
++  {
++    std::lock_guard<std::mutex> lock(paired_reader_helper_mutex);
++    paired_reader_stop = true;
++  }
++  paired_reader_helper_cv.notify_one();
++  paired_reader_helper.join();
++  paired_reader_stop = false;
++}
++
++void FastqSequenceReader::beginPairedReaderTask(const std::function<void()>& task) {
++  if (!paired_reader_helper.joinable()) {
++    task();
++    paired_reader_task_done = true;
++    return;
++  }
++  std::lock_guard<std::mutex> lock(paired_reader_helper_mutex);
++  paired_reader_task = task;
++  paired_reader_task_done = false;
++  paired_reader_task_ready = true;
++  paired_reader_helper_cv.notify_one();
++}
++
++void FastqSequenceReader::waitPairedReaderTask() {
++  if (!paired_reader_helper.joinable()) {
++    return;
++  }
++  std::unique_lock<std::mutex> lock(paired_reader_helper_mutex);
++  paired_reader_done_cv.wait(lock, [this]() { return paired_reader_task_done; });
++}
++
++// Normal paired-end quant can decompress its two independent gzip streams in
++// parallel without changing read order. The caller still holds reader_lock,
++// and pseudoalignment remains outside that lock. One mate is decoded on the
++// calling ReadProcessor pthread and the other on one bounded pool pthread.
++bool FastqSequenceReader::fetchPairedSequencesParallel(
++    char *buf, const int limit, std::vector<std::pair<const char *, int>> &seqs,
++    std::vector<uint32_t> &flags, int &read_id) {
++  if (!paired || nfiles != 2 || interleave_nfiles != 0 || limit < 4) {
++    std::vector<std::pair<const char *, int>> names;
++    std::vector<std::pair<const char *, int>> quals;
++    std::vector<std::string> umis;
++    return fetchSequences(buf, limit, seqs, names, quals, flags, umis, read_id, false, false);
++  }
++
++  readbatch_id += 1;
++  read_id = readbatch_id;
++  seqs.clear();
++  flags.clear();
++
++  const int lane_capacity = limit / 2;
++  while (true) {
++    if (!state) {
++      if (current_file >= files.size()) {
++        return false;
++      }
++      if (current_file + 1 >= files.size()) {
++        std::cerr << "Error: paired-end input is missing its Read 2 file" << std::endl;
++        exit(1);
++      }
++      for (int i = 0; i < 2; i++) {
++        if (fp[i]) {
++          gzclose(fp[i]);
++          fp[i] = nullptr;
++        }
++        if (seq[i]) {
++          kseq_destroy(seq[i]);
++          seq[i] = nullptr;
++        }
++        fp[i] = gzopen(files[current_file + i].c_str(), "r");
++        if (!fp[i]) {
++          std::cerr << "Error: could not open input file " << files[current_file + i]
++                    << std::endl;
++          exit(1);
++        }
++        if (gzbuffer(fp[i], KALLISTO_WEB_GZIP_BUFFER_BYTES) != 0) {
++          std::cerr << "[~warn] could not set 1 MiB gzip input buffer for "
++                    << files[current_file + i] << std::endl;
++        }
++        seq[i] = kseq_init(fp[i]);
++      }
++      beginPairedReaderTask([&]() { l[1] = kseq_read(seq[1]); });
++      l[0] = kseq_read(seq[0]);
++      waitPairedReaderTask();
++      current_file += 2;
++      state = true;
++    }
++
++    std::vector<std::pair<const char *, int>> lane_records[2];
++    lane_records[0].reserve(static_cast<size_t>(lane_capacity / 128));
++    lane_records[1].reserve(static_cast<size_t>(lane_capacity / 128));
++    int lane_used[2] = {0, 0};
++    bool oversized[2] = {false, false};
++
++    auto fill_lane = [&](int lane) {
++      char *lane_buf = buf + lane * lane_capacity;
++      auto &records = lane_records[lane];
++      auto &pending = paired_pending[lane];
++
++      while (!pending.empty()) {
++        const int length = static_cast<int>(pending.front().size());
++        if (length + 1 > lane_capacity - lane_used[lane]) {
++          oversized[lane] = records.empty();
++          return;
++        }
++        char *dest = lane_buf + lane_used[lane];
++        memcpy(dest, pending.front().data(), length);
++        dest[length] = '\0';
++        lane_used[lane] += length + 1;
++        records.emplace_back(dest, length);
++        pending.pop_front();
++      }
++
++      while (l[lane] >= 0) {
++        const int length = l[lane];
++        if (length + 1 > lane_capacity - lane_used[lane]) {
++          oversized[lane] = records.empty();
++          return;
++        }
++        char *dest = lane_buf + lane_used[lane];
++        memcpy(dest, seq[lane]->seq.s, length + 1);
++        lane_used[lane] += length + 1;
++        records.emplace_back(dest, length);
++        l[lane] = kseq_read(seq[lane]);
++      }
++    };
++
++    beginPairedReaderTask([&]() { fill_lane(1); });
++    fill_lane(0);
++    waitPairedReaderTask();
++
++    if (oversized[0] || oversized[1]) {
++      std::cerr << "Error: a FASTQ record exceeds the bounded paired read buffer" << std::endl;
++      exit(1);
++    }
++    if (l[0] < -1 || l[1] < -1) {
++      std::cerr << "Error: malformed or truncated FASTQ record" << std::endl;
++      exit(1);
++    }
++
++    const size_t pair_count = std::min(lane_records[0].size(), lane_records[1].size());
++    for (int lane = 0; lane < 2; lane++) {
++      auto &records = lane_records[lane];
++      auto &pending = paired_pending[lane];
++      for (size_t i = records.size(); i > pair_count; --i) {
++        const auto &record = records[i - 1];
++        pending.emplace_front(record.first, static_cast<size_t>(record.second));
++      }
++    }
++
++    seqs.reserve(pair_count * 2);
++    flags.reserve(pair_count);
++    for (size_t i = 0; i < pair_count; i++) {
++      seqs.push_back(lane_records[0][i]);
++      seqs.push_back(lane_records[1][i]);
++      numreads++;
++      flags.push_back(numreads - 1);
++    }
++
++    const bool r1_done = l[0] == -1 && paired_pending[0].empty();
++    const bool r2_done = l[1] == -1 && paired_pending[1].empty();
++    if (r1_done != r2_done) {
++      std::cerr << "Error: paired-end FASTQ files contain different numbers of reads"
++                << std::endl;
++      exit(1);
++    }
++    if (r1_done && r2_done) {
++      state = false;
++    }
++    if (pair_count != 0) {
++      return true;
++    }
++    if (!(r1_done && r2_done)) {
++      std::cerr << "Error: paired FASTQ reader made no progress" << std::endl;
++      exit(1);
++    }
++    // Both files ended without yielding data. Continue with the next lane pair,
++    // or return false if this was the final input pair.
++  }
++}
++#endif
++
+ // returns true if there is more left to read from the files
+ bool FastqSequenceReader::fetchSequences(char *buf, const int limit,
+                                          std::vector<std::pair<const char *, int>> &seqs,
+@@ -3385,8 +3706,23 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit,
+ 
+         // open the next one
+         for (int i = 0; i < nfiles; i++) {
++          if (seq[i]) {
++            kseq_destroy(seq[i]);
++            seq[i] = nullptr;
++          }
+           fp[i] = files[0] == "-" && nfiles == 1 ? gzdopen(fileno(stdin), "r")
+                                                  : gzopen(files[current_file + i].c_str(), "r");
++          if (!fp[i]) {
++            std::cerr << "Error: could not open input file " << files[current_file + i]
++                      << std::endl;
++            exit(1);
++          }
++#ifdef __EMSCRIPTEN__
++          if (gzbuffer(fp[i], KALLISTO_WEB_GZIP_BUFFER_BYTES) != 0) {
++            std::cerr << "[~warn] could not set 1 MiB gzip input buffer for "
++                      << files[current_file + i] << std::endl;
++          }
++#endif
+           seq[i] = kseq_init(fp[i]);
+           l[i] = kseq_read(seq[i]);
+         }
+@@ -3484,6 +3820,21 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit,
+         l[i] = kseq_read(seq[i]);
+       }
+     } else {
++      bool malformed = false;
++      bool some_reads_remain = false;
++      for (int i = 0; i < nfiles; i++) {
++        malformed = malformed || l[i] < -1;
++        some_reads_remain = some_reads_remain || l[i] >= 0;
++      }
++      if (malformed) {
++        std::cerr << "Error: malformed or truncated FASTQ record" << std::endl;
++        exit(1);
++      }
++      if (paired && nfiles == 2 && some_reads_remain) {
++        std::cerr << "Error: paired-end FASTQ files contain different numbers of reads"
++                  << std::endl;
++        exit(1);
++      }
+       state = false;  // haven't opened file yet
+     }
+   }
+@@ -3502,6 +3853,10 @@ FastqSequenceReader::FastqSequenceReader(FastqSequenceReader &&o)
+       current_file(o.current_file),
+       interleave_nfiles(o.interleave_nfiles),
+       seq(std::move(o.seq)) {
++#ifdef __EMSCRIPTEN__
++  paired_pending[0] = std::move(o.paired_pending[0]);
++  paired_pending[1] = std::move(o.paired_pending[1]);
++#endif
+   o.fp.resize(nfiles);
+   o.l.resize(nfiles, 0);
+   o.nl.resize(nfiles, 0);
+diff --git a/src/ProcessReads.h b/src/ProcessReads.h
+index 712d57b..140451d 100755
+--- a/src/ProcessReads.h
++++ b/src/ProcessReads.h
+@@ -12,6 +12,8 @@
+ #include <mutex>
+ #include <atomic>
+ #include <condition_variable>
++#include <deque>
++#include <functional>
+ 
+ #include "common.h"
+ #include "MinCollector.h"
+@@ -22,6 +24,19 @@
+ #include "BUSData.h"
+ #include "BUSTools.h"
+ 
++inline size_t read_batch_bytes_for_threads(int threads) {
++#ifdef __EMSCRIPTEN__
++  return threads <= 4 ? (1ULL << 25) : (1ULL << 24);
++#else
++  (void)threads;
++  return 1ULL << 23;
++#endif
++}
++
++#ifdef __EMSCRIPTEN__
++constexpr unsigned int KALLISTO_WEB_GZIP_BUFFER_BYTES = 1U << 20;
++#endif
++
+ #ifndef NO_HTSLIB
+ #include <htslib/kstring.h>
+ #include <htslib/sam.h>
+@@ -95,6 +110,14 @@ public:
+                       std::vector<std::string>& umis, int &readbatch_id,
+                       bool full=false,
+                       bool comments=false);
++#ifdef __EMSCRIPTEN__
++  bool fetchPairedSequencesParallel(
++      char *buf, const int limit,
++      std::vector<std::pair<const char*, int>>& seqs,
++      std::vector<uint32_t>& flags, int &readbatch_id);
++  void startPairedReaderHelper();
++  void stopPairedReaderHelper();
++#endif
+ 
+ public:
+   int nfiles = 1;
+@@ -108,6 +131,19 @@ public:
+   int current_file;
+   std::vector<kseq_t*> seq;
+   int interleave_nfiles;
++#ifdef __EMSCRIPTEN__
++  std::deque<std::string> paired_pending[2];
++  std::thread paired_reader_helper;
++  std::mutex paired_reader_helper_mutex;
++  std::condition_variable paired_reader_helper_cv;
++  std::condition_variable paired_reader_done_cv;
++  std::function<void()> paired_reader_task;
++  bool paired_reader_task_ready = false;
++  bool paired_reader_task_done = false;
++  bool paired_reader_stop = false;
++  void beginPairedReaderTask(const std::function<void()>& task);
++  void waitPairedReaderTask();
++#endif
+ };
+ 
+ #ifndef NO_HTSLIB
+@@ -175,7 +211,7 @@ class MasterProcessor {
+ public:
+   MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc, const Transcriptome& model)
+     : tc(tc), index(index), model(model), opt(opt), numreads(0), transfer_threshold(1), counter(0)
+-    ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) {
++    ,nummapped(0), num_umi(0), bufsize(read_batch_bytes_for_threads(opt.threads)), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) {
+ 
+       #ifndef NO_HTSLIB
+       bamfp = nullptr;
+@@ -375,6 +411,17 @@ public:
+   void operator()();
+   void processBuffer();
+   void clear();
++#ifdef __EMSCRIPTEN__
++  void reportWebThreadStats();
++  uint64_t web_batches = 0;
++  uint64_t web_reads = 0;
++  uint64_t web_reader_wait_us = 0;
++  uint64_t web_fetch_us = 0;
++  uint64_t web_process_us = 0;
++  uint64_t web_update_us = 0;
++  uint64_t web_total_us = 0;
++  bool web_stats_reported = false;
++#endif
+ };
+ 
+ class BUSProcessor {
+diff --git a/src/main.cpp b/src/main.cpp
+index 0a54130..ed35542 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -229,7 +229,9 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions &opt) {
+   int no_jump_flag = 0;
+ 
+   const char *opt_string = "t:i:l:P:s:o:n:m:d:b:g:c:p:";
+-  static struct option long_options[] = {// long args
++  // getopt_long stores through these pointers. callMain is reused for every
++  // browser sample, so this table must not retain the prior call's stack.
++  struct option long_options[] = {// long args
+                                          {"verbose", no_argument, &verbose_flag, 1},
+                                          {"plaintext", no_argument, &plaintext_flag, 1},
+                                          {"write-index", no_argument, &write_index_flag, 1},
+@@ -2454,6 +2456,11 @@ std::string get_local_time() {
+ }
+ 
+ int main(int argc, char *argv[]) {
++#ifdef __EMSCRIPTEN__
++  // callMain invokes this entry point repeatedly for sequential browser samples.
++  // musl getopt uses optind=0 to reset its internal scan position.
++  optind = 0;
++#endif
+   std::cout.sync_with_stdio(false);
+   setvbuf(stdout, NULL, _IOFBF, 1048576);
+ 
+@@ -2812,7 +2819,12 @@ int main(int argc, char *argv[]) {
+       } else {
+         // run the em algorithm
+         KmerIndex index(opt);
+-        index.load(opt);
++        std::cerr << "[WEBPERF] index_load_begin" << std::endl;
++        ProgramOptions index_load_opt = opt;
++        index_load_opt.threads = 1;
++        std::cerr << "[WEBPERF] index_load_threads=1 quant_threads=" << opt.threads << std::endl;
++        index.load(index_load_opt);
++        std::cerr << "[WEBPERF] index_load_end" << std::endl;
+         if (opt.fusion) {
+           // need full transcript sequences
+           index.loadTranscriptSequences();
+@@ -2835,7 +2847,13 @@ int main(int argc, char *argv[]) {
+ 
+         MinCollector collection(index, opt);
+         MasterProcessor MP(index, opt, collection, model);
++#ifdef __EMSCRIPTEN__
++        std::cerr << "[WEBPERF] read_batch_bytes=" << MP.bufsize
++                  << " gzip_buffer_bytes=" << KALLISTO_WEB_GZIP_BUFFER_BYTES << std::endl;
++#endif
++        std::cerr << "[WEBPERF] pseudoalign_begin" << std::endl;
+         num_processed = ProcessReads(MP, opt);
++        std::cerr << "[WEBPERF] pseudoalign_end" << std::endl;
+ 
+         // save modified index for future use
+         if (opt.write_index) {
+@@ -2868,7 +2886,9 @@ int main(int argc, char *argv[]) {
+           em.set_priors(priors);
+           priors.clear();
+         }
++        std::cerr << "[WEBPERF] em_begin" << std::endl;
+         em.run(10000, 50, true, opt.bias);
++        std::cerr << "[WEBPERF] em_end" << std::endl;
+ 
+         std::string call = argv_to_string(argc, argv);
+ 
+@@ -2895,6 +2915,7 @@ int main(int argc, char *argv[]) {
+                     << std::endl;
+         }
+ 
++        std::cerr << "[WEBPERF] output_begin" << std::endl;
+         plaintext_aux(
+             opt.output + "/run_info.json",
+             std::string(std::to_string(index.onlist_sequences.cardinality())),
+@@ -2970,6 +2991,7 @@ int main(int argc, char *argv[]) {
+ #endif
+         }
+ 
++        std::cerr << "[WEBPERF] output_end" << std::endl;
+         std::cerr << std::endl;
+         if (num_pseudoaligned == 0) {
+           exit(1);  // exit with error
+

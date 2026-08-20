@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-14",
+  "nativeBaseline": {
+    "aligner": {
+      "path": ".w2-cache/sources/hisat2-v2.2.3/hisat2-align-s",
+      "sha256": "0bc7e77ef1b61603558dea95b806fe46b7ea17989c9a788d4d801bfd842b6fcb",
+      "bytes": 12884904
+    },
+    "indexBuilder": {
+      "path": ".w2-cache/sources/hisat2-v2.2.3/hisat2-build-s",
+      "sha256": "de1b3ac8bc508f53f5b13eb59c7338068cc29db5ed4ca2788f7c450ef65ace92",
+      "bytes": 6945960
+    },
+    "distributed": false
+  },
+  "web": {
+    "javascript": {
+      "path": "tools/hisat2/dist/hisat2.mjs",
+      "sha256": "c35bf7f83c40c88fb64cc2226f9dfb2a4c648b02c645380ccaf1b2f8c5bdf02f",
+      "bytes": 208356
+    },
+    "wasm": {
+      "path": "tools/hisat2/dist/hisat2.wasm",
+      "sha256": "cc82995c05b1eb1897b7f42d1d0160b160062b02d728a1fd41d577f03afc6f9f",
+      "bytes": 1107968
+    },
+    "flags": [
+      "-O3",
+      "-g2",
+      "-msimd128",
+      "-msse2",
+      "-pthread",
+      "-sASSERTIONS=2",
+      "-sMODULARIZE=1",
+      "-sEXPORT_ES6=1",
+      "-sENVIRONMENT=worker,node",
+      "-sINVOKE_RUN=0",
+      "-sEXIT_RUNTIME=1",
+      "-sFORCE_FILESYSTEM=1",
+      "-sALLOW_MEMORY_GROWTH=1",
+      "-sINITIAL_MEMORY=268435456",
+      "-sMAXIMUM_MEMORY=2147483648",
+      "-sSTACK_SIZE=16777216",
+      "-sPTHREAD_POOL_SIZE=4",
+      "-lworkerfs.js"
+    ]
+  },
+  "reproducibility": {
+    "consecutiveBuilds": 2,
+    "javascriptShaMatched": true,
+    "wasmShaMatched": true
+  }
+}

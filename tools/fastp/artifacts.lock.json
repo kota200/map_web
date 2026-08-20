@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-14",
+  "nativeBaseline": {
+    "path": ".w2-cache/build/fastp-native-v0.23.4/fastp",
+    "sha256": "1eedaddb5f7bb474895eaaf2cab727df0ef3b73ca4e8ab28d9395cbc25487c31",
+    "bytes": 707968,
+    "distributed": false
+  },
+  "web": {
+    "javascript": {
+      "path": "tools/fastp/dist/fastp.mjs",
+      "sha256": "fa5c9b8a91bd184533f0a7916a29fbb07e2cb4a995b17f014215b46e9517c8d3",
+      "bytes": 210221
+    },
+    "wasm": {
+      "path": "tools/fastp/dist/fastp.wasm",
+      "sha256": "40a60c81e6ec1301d95ba0cefca59cd3f4d559a3de33706f158a895979615b8c",
+      "bytes": 836920
+    },
+    "flags": [
+      "-std=c++11",
+      "-pthread",
+      "-O3",
+      "-g2",
+      "-sUSE_ZLIB=1",
+      "-sASSERTIONS=2",
+      "-sENVIRONMENT=worker,node",
+      "-sMODULARIZE=1",
+      "-sEXPORT_ES6=1",
+      "-sINVOKE_RUN=0",
+      "-sEXIT_RUNTIME=1",
+      "-sFORCE_FILESYSTEM=1",
+      "-sALLOW_MEMORY_GROWTH=1",
+      "-sINITIAL_MEMORY=268435456",
+      "-sMAXIMUM_MEMORY=2147483648",
+      "-sSTACK_SIZE=8388608",
+      "-sPTHREAD_POOL_SIZE=8",
+      "-lworkerfs.js"
+    ]
+  },
+  "reproducibility": {
+    "consecutiveBuilds": 2,
+    "javascriptShaMatched": true,
+    "wasmShaMatched": true
+  }
+}

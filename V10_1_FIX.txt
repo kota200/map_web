@@ -1,0 +1,24 @@
+v10.1 compile fix (zlib-ng + WebAssembly)
+=========================================
+
+Observed v10 failure:
+  zlib-ng 2.1.0.devel did not recognize Emscripten/WebAssembly as a CPU
+  architecture, fell back to x86, and compiled arch/x86/x86_features.c.
+  That source includes <cpuid.h> and x86 inline assembly, which cannot compile
+  for wasm64-unknown-emscripten.
+
+v10.1 changes:
+  * Force zlib-ng to a generic WebAssembly architecture immediately after its
+    architecture detector runs.
+  * Explicitly disable x86 AVX/SSE/PCLMUL feature variants for zlib-ng.
+  * Keep global -msimd128 so LLVM can auto-vectorize generic zlib-ng C code to
+    WebAssembly SIMD128; this does not use x86 CPUID or x86 intrinsics.
+  * Explicitly set zlib-ng WITH_SANITIZER=OFF.
+  * Add a build guard that aborts configuration if any arch/x86 source is
+    selected under zlib-ng.
+  * Restrict kallisto's C++-only warning suppressions to C++ so they do not
+    generate noise while compiling zlib-ng C sources.
+
+The browser architecture is otherwise unchanged:
+  WORKERFS -> kallisto WebAssembly -> local outputs
+  Memory64=1, pthreads, 8 MiB stacks, -O3, -flto, -msimd128, zlib-ng.

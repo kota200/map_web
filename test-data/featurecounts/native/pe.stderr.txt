@@ -1,0 +1,52 @@
+
+        ==========     _____ _    _ ____  _____  ______          _____  
+        =====         / ____| |  | |  _ \|  __ \|  ____|   /\   |  __ \ 
+          =====      | (___ | |  | | |_) | |__) | |__     /  \  | |  | |
+            ====      \___ \| |  | |  _ <|  _  /|  __|   / /\ \ | |  | |
+              ====    ____) | |__| | |_) | | \ \| |____ / ____ \| |__| |
+        ==========   |_____/ \____/|____/|_|  \_\______/_/    \_\_____/
+	  v2.1.1
+
+//========================== featureCounts setting ===========================\\
+||                                                                            ||
+||             Input files : 1 SAM file                                       ||
+||                                                                            ||
+||                           pe.sam                                           ||
+||                                                                            ||
+||             Output file : pe.counts.txt                                    ||
+||                 Summary : pe.counts.txt.summary                            ||
+||              Paired-end : yes                                              ||
+||        Count read pairs : yes                                              ||
+||              Annotation : annotation.gtf (GTF)                             ||
+||      Dir for temp files : /mnt/c/Users/0314k/Desktop/mapping_app/kalli ... ||
+||                                                                            ||
+||                 Threads : 1                                                ||
+||                   Level : meta-feature level                               ||
+||      Multimapping reads : not counted                                      ||
+|| Multi-overlapping reads : not counted                                      ||
+||   Min overlapping bases : 1                                                ||
+||                                                                            ||
+\\============================================================================//
+
+//================================= Running ==================================\\
+||                                                                            ||
+|| Load annotation file annotation.gtf ...                                    ||
+||    Features : 2                                                            ||
+||    Meta-features : 1                                                       ||
+||    Chromosomes/contigs : 1                                                 ||
+||                                                                            ||
+|| Process SAM file pe.sam...                                                 ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 1                                                    ||
+||    Successfully assigned alignments : 1 (100.0%)                           ||
+||    Running time : 0.00 minutes                                             ||
+||                                                                            ||
+|| Write the final count table.                                               ||
+|| Write the read assignment summary.                                         ||
+||                                                                            ||
+|| Summary of counting results can be found in file "/mnt/c/Users/0314k/Desk  ||
+|| top/mapping_app/kallisto-web/test-data/featurecounts/native/pe.counts.txt  ||
+|| .summary"                                                                  ||
+||                                                                            ||
+\\============================================================================//
+

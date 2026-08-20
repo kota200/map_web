@@ -1,0 +1,3 @@
+[submodule "vendor/kallisto"]
+	path = vendor/kallisto
+	url = https://github.com/pachterlab/kallisto.git

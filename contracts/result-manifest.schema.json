@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rna-seq-local.invalid/contracts/result-manifest.schema.json",
+  "title": "RNA-seq result manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "job_id", "status", "engine", "samples", "outputs", "warnings", "cleanup"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "job_id": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["completed", "failed", "cancelled"] },
+    "engine": { "enum": ["kallisto", "hisat2-featurecounts"] },
+    "samples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "status", "outputs"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["completed", "failed", "cancelled", "not-run"] },
+          "outputs": { "$ref": "#/$defs/outputs" }
+        }
+      }
+    },
+    "outputs": { "$ref": "#/$defs/outputs" },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["completed", "partial", "not-required", "failed"] },
+        "removed": { "type": "array", "items": { "type": "string" } },
+        "retained": { "type": "array", "items": { "type": "string" } },
+        "message": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["relative_path", "size_bytes", "role"],
+        "properties": {
+          "relative_path": { "type": "string", "minLength": 1 },
+          "size_bytes": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "role": { "enum": ["primary", "matrix", "metadata", "log", "report", "temporary"] }
+        }
+      }
+    }
+  }
+}

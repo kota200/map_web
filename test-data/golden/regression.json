@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "fixture": "tiny paired-end synthetic RNA-seq",
+  "kallisto_version": "0.52.0",
+  "index_size_bytes": 2012,
+  "index_sha256": "aa60882d699ed4f66061f3c0612d58dd4552abc4ac54dd24e628646e30614bcc",
+  "n_processed": 2,
+  "n_pseudoaligned": 2,
+  "targets": 2,
+  "notes": "Captured before Phase W1 changes on 2026-08-14 with the archived Wasm runtime. Runtime timing fields are intentionally excluded."
+}
