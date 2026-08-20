@@ -21,9 +21,15 @@ pub struct SidecarRecord {
     #[serde(default)]
     pub source_url: String,
     #[serde(default)]
+    pub source_revision: String,
+    #[serde(default)]
+    pub build_provenance: String,
+    #[serde(default)]
     pub license: String,
     #[serde(default)]
     pub license_file: String,
+    #[serde(default)]
+    pub license_sha256: String,
     #[serde(default)]
     pub support_files: Vec<SidecarSupportFile>,
 }
@@ -43,6 +49,12 @@ pub struct SidecarStatus {
     pub version: Option<String>,
     pub valid: bool,
     pub detail: String,
+}
+#[derive(Clone, Debug, Serialize)]
+pub struct SidecarVersionEvidence {
+    pub tool: Tool,
+    pub version: String,
+    pub output: String,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct RunStatus {
@@ -102,6 +114,20 @@ pub fn verify_sidecar(
         return Err(DesktopError::UnsafePath(record.file.clone()));
     }
     let path = verify_registered_file(root, &record.file, &record.sha256, tool)?;
+    if record.version.trim().is_empty()
+        || record.source_url.trim().is_empty()
+        || record.source_revision.trim().is_empty()
+        || record.build_provenance.trim().is_empty()
+        || record.license.trim().is_empty()
+        || record.license_file.trim().is_empty()
+        || record.license_sha256.len() != 64
+    {
+        return Err(DesktopError::UnsupportedTool(format!(
+            "{} provenance or license registration is incomplete",
+            tool_name(tool)
+        )));
+    }
+    verify_registered_file(root, &record.license_file, &record.license_sha256, tool)?;
     for support_file in &record.support_files {
         verify_registered_file(root, &support_file.file, &support_file.sha256, tool)?;
     }
@@ -171,6 +197,67 @@ pub fn sidecar_statuses(root: &Path, manifest: &SidecarManifest) -> Vec<SidecarS
                 detail: error.to_string(),
             },
         }
+    })
+    .collect()
+}
+
+pub fn verify_bundled_sidecar_versions(
+    root: &Path,
+    manifest: &SidecarManifest,
+) -> Result<Vec<SidecarVersionEvidence>, DesktopError> {
+    [
+        Tool::Fastp,
+        Tool::Hisat2,
+        Tool::Hisat2Build,
+        Tool::FeatureCounts,
+    ]
+    .into_iter()
+    .map(|tool| {
+        let record = manifest
+            .sidecars
+            .iter()
+            .find(|record| record.tool == tool)
+            .ok_or_else(|| DesktopError::UnsupportedTool(tool_name(&tool).into()))?;
+        let program = verify_sidecar(root, manifest, &tool)?;
+        let version_argument = if tool == Tool::FeatureCounts {
+            "-v"
+        } else {
+            "--version"
+        };
+        let output = Command::new(program)
+            .arg(version_argument)
+            .stdin(Stdio::null())
+            .output()
+            .map_err(|error| {
+                DesktopError::Process(format!(
+                    "could not launch bundled {} for version verification: {error}",
+                    tool_name(&tool)
+                ))
+            })?;
+        let combined = format!(
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        if !output.status.success() {
+            return Err(DesktopError::Process(format!(
+                "bundled {} version command exited unsuccessfully: {}",
+                tool_name(&tool),
+                combined.trim()
+            )));
+        }
+        if !combined.contains(&record.version) {
+            return Err(DesktopError::Process(format!(
+                "bundled {} version output did not contain registered version {}",
+                tool_name(&tool),
+                record.version
+            )));
+        }
+        Ok(SidecarVersionEvidence {
+            tool,
+            version: record.version.clone(),
+            output: combined.trim().to_owned(),
+        })
     })
     .collect()
 }
@@ -695,8 +782,11 @@ mod tests {
                 sha256: "0".repeat(64),
                 version: "test".into(),
                 source_url: String::new(),
+                source_revision: String::new(),
+                build_provenance: String::new(),
                 license: String::new(),
                 license_file: String::new(),
+                license_sha256: String::new(),
                 support_files: Vec::new(),
             }],
         };

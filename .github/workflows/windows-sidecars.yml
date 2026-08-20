@@ -7,6 +7,7 @@ on:
       - '.github/workflows/windows-sidecars.yml'
       - 'desktop/sidecar-dispatcher/**'
       - 'desktop/scripts/package-windows-sidecars.ps1'
+      - 'desktop/src-tauri/**'
       - 'tools/fastp/source.lock.json'
       - 'tools/hisat2/source.lock.json'
       - 'tools/featurecounts/source.lock.json'
@@ -77,13 +78,36 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          .\.sidecar-build\out\fastp.exe --version
-          .\.sidecar-build\out\hisat2.exe --version
-          .\.sidecar-build\out\hisat2-build.exe --version
-          .\.sidecar-build\out\featureCounts.exe -v
+          function Assert-NativeVersion([string]$Executable, [string[]]$Arguments, [string]$ExpectedVersion) {
+            $versionOutput = (& $Executable @Arguments 2>&1 | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0) {
+              throw "$Executable version command exited with $LASTEXITCODE`: $versionOutput"
+            }
+            if ($versionOutput -notmatch [regex]::Escape($ExpectedVersion)) {
+              throw "$Executable version output does not contain $ExpectedVersion`: $versionOutput"
+            }
+            Write-Host $versionOutput
+          }
+          Assert-NativeVersion .\.sidecar-build\out\fastp.exe @('--version') '0.23.4'
+          Assert-NativeVersion .\.sidecar-build\out\hisat2.exe @('--version') '2.2.3'
+          Assert-NativeVersion .\.sidecar-build\out\hisat2-build.exe @('--version') '2.2.3'
+          Assert-NativeVersion .\.sidecar-build\out\featureCounts.exe @('-v') '2.1.1'
           Copy-Item .sidecar-build\licenses -Destination .sidecar-build\out\licenses -Recurse
           .\desktop\scripts\package-windows-sidecars.ps1 -InputDirectory .sidecar-build\out -OutputDirectory .sidecar-build\package
           Copy-Item .sidecar-build\licenses -Destination .sidecar-build\package\licenses -Recurse
+      - name: Launch bundled sidecars from the Tauri application
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Copy-Item .sidecar-build\package\* -Destination desktop\src-tauri\binaries -Recurse -Force
+          cargo fmt --manifest-path desktop\src-tauri\Cargo.toml --all -- --check
+          if ($LASTEXITCODE -ne 0) { throw "Rust formatting check failed with $LASTEXITCODE" }
+          cargo test --manifest-path desktop\src-tauri\Cargo.toml
+          if ($LASTEXITCODE -ne 0) { throw "Rust core tests failed with $LASTEXITCODE" }
+          cargo test --manifest-path desktop\src-tauri\Cargo.toml --features desktop --test bundled_sidecars -- --nocapture
+          if ($LASTEXITCODE -ne 0) { throw "Tauri bundled-sidecar integration test failed with $LASTEXITCODE" }
+          cargo build --manifest-path desktop\src-tauri\Cargo.toml --features desktop
+          if ($LASTEXITCODE -ne 0) { throw "Tauri desktop-feature build failed with $LASTEXITCODE" }
       - name: Archive corresponding source and build evidence
         run: |
           git -C .sidecar-build/src/fastp archive --format=tar.gz --prefix=fastp-v0.23.4/ HEAD > .sidecar-build/fastp-v0.23.4-source.tar.gz

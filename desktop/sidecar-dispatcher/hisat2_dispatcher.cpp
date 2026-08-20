@@ -35,6 +35,13 @@ static std::wstring value_after(const std::vector<std::wstring>& args, const wch
   return L"";
 }
 
+static bool has_option(const std::vector<std::wstring>& args, const wchar_t* option) {
+  for (const auto& arg : args) {
+    if (arg == option) return true;
+  }
+  return false;
+}
+
 static bool fasta_exceeds_small_index_limit(const std::wstring& fasta) {
   // The upstream wrapper changes to the large builder at approximately 4 Gbp.
   // FASTA files are local and are deliberately scanned in native code, never
@@ -98,10 +105,16 @@ int wmain() {
   LocalFree(argv);
   const std::wstring dir = executable_directory();
 #ifdef HISAT2_BUILD_DISPATCHER
+  if (args.size() == 1 && args[0] == L"--version") {
+    return launch(dir + L"\\hisat2-build-s.exe", args);
+  }
   if (args.size() < 2) { std::fwprintf(stderr, L"HISAT2-build reference and output prefix are required.\n"); return 64; }
-  const bool large = value_after(args, L"--large-index").size() > 0 || fasta_exceeds_small_index_limit(args[args.size() - 2]);
+  const bool large = has_option(args, L"--large-index") || fasta_exceeds_small_index_limit(args[args.size() - 2]);
   const std::wstring helper = dir + L"\\hisat2-build-" + (large ? L"l.exe" : L"s.exe");
 #else
+  if (args.size() == 1 && args[0] == L"--version") {
+    return launch(dir + L"\\hisat2-align-s.exe", args);
+  }
   const std::wstring prefix = value_after(args, L"-x");
   if (prefix.empty()) { std::fwprintf(stderr, L"HISAT2 index prefix (-x) is required.\n"); return 64; }
   const std::wstring helper = dir + L"\\hisat2-align-" +
