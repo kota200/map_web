@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - '.github/workflows/windows-sidecars.yml'
       - 'desktop/sidecar-dispatcher/**'
       - 'desktop/scripts/package-windows-sidecars.ps1'
       - 'tools/fastp/source.lock.json'
