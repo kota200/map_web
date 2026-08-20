@@ -1,0 +1,25 @@
+[package]
+name = "rna-seq-local-desktop"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+desktop = ["dep:tauri"]
+
+[[bin]]
+name = "rna-seq-local-desktop"
+path = "src/main.rs"
+required-features = ["desktop"]
+
+[dependencies]
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+uuid = { version = "1", features = ["v4", "serde"] }
+tauri = { version = "2", features = [], optional = true }
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' data: blob:; style-src 'self';">
+  <title>Hosted reference cache | RNA-seq Local</title>
+  <link rel="stylesheet" href="./css/kallisto-app.css?v=20260820-w6">
+</head>
+<body class="help-page">
+  <header class="site-header">
+    <div>
+      <h1>RNA-seq Local</h1>
+      <p>Hosted HISAT2 reference cache</p>
+    </div>
+    <nav aria-label="Primary">
+      <a href="./index.html">Home</a>
+      <a href="./reference-cache.html" aria-current="page">Reference cache</a>
+      <a href="./help.html">Help</a>
+    </nav>
+  </header>
+
+  <main class="app-shell cache-manager" aria-labelledby="cacheTitle">
+    <section class="step-card cache-manager-intro">
+      <div class="section-kicker">Phase W4 reference package</div>
+      <h2 id="cacheTitle">Download, verify, and remove hosted reference data</h2>
+      <p>Only the selected prebuilt HISAT2 index and its compatible annotation are downloaded. FASTQ files and analysis results are never uploaded by this page.</p>
+      <p id="catalogNotice" class="cache-notice" aria-live="polite">Loading the configured catalog…</p>
+    </section>
+
+    <section class="step-card cache-manager-panel" aria-labelledby="referenceTitle">
+      <div class="step-head"><h2 id="referenceTitle">Reference</h2></div>
+      <label for="referenceSelect">Hosted package</label>
+      <select id="referenceSelect" disabled></select>
+      <dl class="cache-reference-details">
+        <div><dt>Assembly</dt><dd id="referenceAssembly">—</dd></div>
+        <div><dt>HISAT2</dt><dd id="referenceHisat2">—</dd></div>
+        <div><dt>Annotation</dt><dd id="referenceAnnotation">—</dd></div>
+        <div><dt>Payload</dt><dd id="referencePayload">—</dd></div>
+      </dl>
+      <div class="cache-actions">
+        <button id="cacheReference" type="button" class="primary" disabled>Download / verify cache</button>
+        <button id="deleteReference" type="button" class="danger" disabled>Delete cached reference</button>
+        <button id="refreshCache" type="button" class="secondary" disabled>Refresh usage</button>
+      </div>
+      <div class="cache-progress-wrap">
+        <label for="cacheProgress">Transfer / verification progress</label>
+        <progress id="cacheProgress" max="1" value="0"></progress>
+        <span id="cacheProgressText">Idle</span>
+      </div>
+    </section>
+
+    <section class="step-card cache-usage-panel" aria-labelledby="usageTitle">
+      <div class="step-head"><h2 id="usageTitle">Local browser storage</h2></div>
+      <dl class="cache-usage-grid">
+        <div><dt>Selected reference cache</dt><dd id="selectedCacheUsage">Checking…</dd></div>
+        <div><dt>Total browser usage</dt><dd id="browserUsage">Checking…</dd></div>
+        <div><dt>Available quota</dt><dd id="browserAvailable">Checking…</dd></div>
+        <div><dt>Cache state</dt><dd id="cacheState">Checking…</dd></div>
+      </dl>
+      <p id="cacheStatus" class="cache-status" data-state="idle" aria-live="polite">Initializing the OPFS cache Worker…</p>
+    </section>
+  </main>
+
+  <script type="module" src="./js/reference-cache.mjs"></script>
+</body>
+</html>

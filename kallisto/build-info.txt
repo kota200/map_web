@@ -1,0 +1,17 @@
+mode=release-v10.4-batch
+kallisto_version=0.52.0
+memory64=1
+maximum_memory=3221225472
+stack_size=8388608
+default_pthread_stack_size=8388608
+pthread_pool_size=9
+optimization=O3
+lto=selective_quant_hotpath_and_zlibng
+wasm_simd128=selective_quant_hotpath_and_zlibng
+compression=zlib-ng
+zlib_compat=1
+read_batch_bytes_threads_1_to_4=33554432
+read_batch_bytes_threads_5_to_8=16777216
+gzip_buffer_bytes=1048576
+asan=0
+ubsan=0

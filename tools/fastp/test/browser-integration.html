@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; style-src 'self' 'unsafe-inline';">
+  <title>fastp-Wasm browser integration</title>
+  <style>
+    body { margin: 2rem; color: #172128; font: 16px/1.5 system-ui, sans-serif; background: #f4f8f7; }
+    main { max-width: 72rem; margin: auto; padding: 2rem; border: 1px solid #cbd9d6; border-radius: 1rem; background: white; }
+    pre { min-height: 12rem; padding: 1rem; overflow: auto; color: #d8f5ec; background: #10201d; border-radius: .6rem; }
+    [data-state="passed"] { color: #08733d; }
+    [data-state="failed"] { color: #a11d2b; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>fastp-Wasm browser integration</h1>
+    <p id="status" role="status">Running SE/PE native-equivalence fixtures…</p>
+    <pre id="output" aria-live="polite"></pre>
+  </main>
+  <script type="module" src="./browser-integration.mjs"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "fastp": {
+    "version": "0.23.4",
+    "tag": "v0.23.4",
+    "repository": "https://github.com/OpenGene/fastp.git",
+    "commit": "1ffcaed6892832c09c4b4094c201cd4eff8fa622",
+    "canonicalGitArchiveSha256": "43369abc2dab82829105a0d797e062487395be7a745a5c387a92c60b79cc3c09",
+    "license": "MIT",
+    "licenseSha256": "52e18866a994ee9839aa6d15696bc1fe425e6466631d3a57a75c089dd84ae88e"
+  },
+  "nativeBaseline": {
+    "os": "Ubuntu 22.04.5 LTS (WSL2 x86_64)",
+    "compiler": "g++ 11.4.0",
+    "libisal": {
+      "version": "2.30.0-4",
+      "devPackageSha256": "f6f0a7cba41cfe07bf05e34cd6157a7178b2b24550e92df8d225594abfe9d8df",
+      "runtimePackageSha256": "c4910d7444db48d6ad5210764901577c653685f6a813310039d0c371023272b6"
+    },
+    "libdeflate": {
+      "version": "1.10-2",
+      "devPackageSha256": "83802a0aa001d4fab55bf02caee8e9241bbdaaf309dfde5137ea105289b1e9f6",
+      "runtimePackageSha256": "a64f7f93a487e57e1a01404d378a8ef1428b1c6b0ecf24fc484c89b681a051c9"
+    }
+  },
+  "wasmToolchain": {
+    "emsdkRepository": "https://github.com/emscripten-core/emsdk.git",
+    "emsdkCommit": "bfce6709931a9381d91e6cd75c422dec2188fbf2",
+    "emscriptenVersion": "6.0.6",
+    "emscriptenCommit": "ce75e06884093bcefb86a6b8fd56a5d62a4cc245",
+    "releaseBundle": "833aa203ba2283fc2b6adb504a79a3a0d692df81",
+    "zlib": {
+      "version": "1.3.2",
+      "source": "https://github.com/madler/zlib/archive/refs/tags/v1.3.2.tar.gz",
+      "sha512": "16fea4df307a68cf0035858abe2fd550250618a97590e202037acd18a666f57afc10f8836cbbd472d54a0e76539d0e558cb26f059d53de52ff90634bbf4f47d4"
+    }
+  }
+}

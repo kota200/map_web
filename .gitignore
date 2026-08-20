@@ -1,0 +1,12 @@
+# Generated build and source caches
+.w2-cache/
+.wasm-build/
+build/
+desktop/src-tauri/target/
+# Reproducible HISAT2 validation output (built from the checked-in fixture)
+/tools/w6-validation/representative-hisat2/index/
+
+# Local application data and logs
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' data: blob:; style-src 'self';">
+  <title>HISAT2 + featureCounts | RNA-seq Local</title>
+  <link rel="stylesheet" href="./css/kallisto-app.css?v=20260820-w6">
+</head>
+<body class="w5-page">
+  <header class="site-header">
+    <div>
+      <h1>RNA-seq Local</h1>
+      <p>Genome alignment and annotation-based gene counting</p>
+    </div>
+    <nav aria-label="Primary">
+      <a href="./index.html">Home</a>
+      <a href="./hisat2-workflow.html" aria-current="page">HISAT2 workflow</a>
+      <a href="./reference-cache.html">Reference cache</a>
+      <a href="./help.html">Help</a>
+    </nav>
+  </header>
+
+  <main class="app-shell w5-workflow" aria-labelledby="workflowTitle">
+    <section class="product-intro w5-intro">
+      <div class="eyebrow">EXPERIMENTAL WEB WORKFLOW · PHASE W5</div>
+      <div class="product-intro-copy">
+        <div>
+          <h2 id="workflowTitle">HISAT2 + featureCounts in your browser</h2>
+          <p>Align reads to a hosted prebuilt genome index, count annotated features, and calculate gene TPM. Samples are processed sequentially and biological input files remain local.</p>
+        </div>
+        <span class="release-badge release-experimental">Experimental</span>
+      </div>
+      <div id="catalogBoundary" class="callout-warning" aria-live="polite">Loading the hosted-reference catalog…</div>
+      <div class="science-boundary">
+        <strong>Scientific boundary</strong>
+        <span>featureCounts raw counts and gene TPM are annotation-derived gene-level quantities. They are not interchangeable with kallisto transcript-level estimates or transcript TPM.</span>
+      </div>
+    </section>
+
+    <section class="status-strip w5-status-strip" aria-live="polite">
+      <div><span class="status-label">Environment</span><strong id="environmentStatus">Checking browser support…</strong></div>
+      <div><span class="status-label">Job</span><strong id="jobStatus">Not started</strong></div>
+      <div><span class="status-label">Current stage</span><strong id="stageStatus">—</strong></div>
+    </section>
+
+    <section class="step-card" aria-labelledby="referenceTitle">
+      <div class="step-head"><h2 id="referenceTitle"><span class="step-number">STEP 1.</span> Choose hosted reference</h2></div>
+      <label for="referenceSelect"><span>Prebuilt HISAT2 index + matching annotation</span></label>
+      <select id="referenceSelect" disabled></select>
+      <dl class="cache-reference-details w5-reference-details">
+        <div><dt>Organism / assembly</dt><dd id="referenceAssembly">—</dd></div>
+        <div><dt>HISAT2 index</dt><dd id="referenceEngine">—</dd></div>
+        <div><dt>Annotation</dt><dd id="referenceAnnotation">—</dd></div>
+        <div><dt>Download / cache</dt><dd id="referenceSize">—</dd></div>
+      </dl>
+      <p class="small-note">The selected package is downloaded from the configured catalog, checksum-verified, and reused from OPFS. Reads are never uploaded.</p>
+    </section>
+
+    <section class="step-card" aria-labelledby="readsTitle">
+      <div class="step-head"><h2 id="readsTitle"><span class="step-number">STEP 2.</span> Add RNA-seq samples</h2></div>
+      <div class="mode-grid">
+        <label class="mode-option"><input type="radio" name="w5ReadMode" value="se" checked><span>Single-end</span></label>
+        <label class="mode-option"><input type="radio" name="w5ReadMode" value="pe"><span>Paired-end</span></label>
+      </div>
+      <div id="w5SampleCards" class="sample-card-list"></div>
+      <div class="sample-actions"><button id="addW5Sample" type="button" class="secondary-button">+ Add sample</button></div>
+      <p class="small-note">Accepted: .fastq, .fq, .fastq.gz, .fq.gz. For lane-split paired data, choose equal numbers of R1 and R2 files in matching order.</p>
+    </section>
+
+    <section class="step-card" aria-labelledby="settingsTitle">
+      <div class="step-head"><h2 id="settingsTitle"><span class="step-number">STEP 3.</span> Configure preprocessing and counting</h2></div>
+      <div class="w5-option-callout">
+        <label class="inline-check">
+          <input id="runFastp" type="checkbox">
+          <span><strong>Run fastp preprocessing</strong> (optional; default OFF)</span>
+        </label>
+        <p class="small-note">When enabled, cleaned FASTQ, JSON, and HTML reports are retained for download. Temporary decompressed FASTQ and SAM files are removed automatically.</p>
+      </div>
+      <div class="parameter-grid">
+        <label>
+          <span>Threads (validated range)</span>
+          <select id="w5Threads">
+            <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+          </select>
+          <small class="field-help">Explicitly selected; hardware concurrency is not used.</small>
+        </label>
+        <label>
+          <span>Strandedness</span>
+          <select id="w5Strandedness">
+            <option value="0" selected>0 · unstranded</option><option value="1">1 · stranded</option><option value="2">2 · reversely stranded</option>
+          </select>
+        </label>
+        <label><span>Annotation feature type</span><input id="w5FeatureType" type="text" value="exon" maxlength="80"></label>
+        <label><span>Grouping attribute</span><input id="w5Attribute" type="text" value="gene_id" maxlength="80"></label>
+        <label id="fastpLengthField" hidden><span>fastp minimum read length</span><input id="fastpLength" type="number" min="1" max="100000" step="1" value="15"></label>
+      </div>
+      <div class="w6-resource-panel" aria-labelledby="resourceEstimateTitle">
+        <div>
+          <h3 id="resourceEstimateTitle">Web storage and scale preflight</h3>
+          <p id="w6ResourceEstimate" class="small-note">Select FASTQ files to calculate a conservative temporary-storage estimate.</p>
+        </div>
+        <strong id="w6ResourceDecision" class="runtime-badge">Checking…</strong>
+      </div>
+      <h3>Exact command arguments for the first sample</h3>
+      <pre id="w5CommandPreview" class="command-preview" aria-live="polite"></pre>
+    </section>
+
+    <section class="step-card" aria-labelledby="runTitle">
+      <div class="step-head"><h2 id="runTitle"><span class="step-number">STEP 4.</span> Run locally</h2></div>
+      <div id="w5Preflight" class="callout-warning">Choose a reference and add valid FASTQ files.</div>
+      <div class="quant-actions">
+        <button id="runW5" type="button" disabled>Run HISAT2 + featureCounts locally</button>
+        <button id="cancelW5" type="button" class="danger-button" disabled>Stop</button>
+      </div>
+      <div id="w5Progress" class="progress-block" hidden>
+        <strong id="w5ProgressLabel">Preparing…</strong>
+        <div class="progress-track" aria-hidden="true"><div id="w5ProgressBar" class="progress-bar"></div></div>
+        <div class="batch-progress-summary"><span id="w5ProgressDetail">Waiting</span><span id="w5Elapsed">0 sec</span></div>
+      </div>
+      <pre id="w5Log" class="log-console" hidden></pre>
+    </section>
+
+    <section id="w5Results" class="step-card results-section" hidden aria-labelledby="resultsTitle">
+      <div class="step-head"><h2 id="resultsTitle"><span class="step-number">STEP 5.</span> Results</h2></div>
+      <div id="w5Summary" class="summary-grid"></div>
+      <div id="w5Warnings" class="callout-warning" hidden></div>
+      <h3>Batch outputs</h3>
+      <div id="w5BatchOutputs" class="result-file-grid"></div>
+      <h3>Sample outputs</h3>
+      <div id="w5SampleOutputs" class="sample-result-list"></div>
+      <div class="result-actions w5-retained-actions">
+        <button id="downloadManifest" type="button" class="secondary-button">Download result_manifest.json</button>
+        <button id="deleteCleanedFastq" type="button" class="danger-button" hidden>Delete retained cleaned FASTQ from browser storage</button>
+      </div>
+      <p id="w5CleanupStatus" class="small-note"></p>
+    </section>
+  </main>
+
+  <script type="module" src="./js/hisat2-workflow.mjs?v=20260820-w6"></script>
+</body>
+</html>

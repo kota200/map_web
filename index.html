@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' data: blob:; style-src 'self';">
+  <title>RNA-seq Local | Browser-first analysis</title>
+  <link rel="stylesheet" href="./css/kallisto-app.css?v=20260820-w6">
+</head>
+<body>
+  <header class="site-header">
+    <div>
+      <h1>RNA-seq Local</h1>
+      <p>Browser-first RNA-seq analysis with an established kallisto workflow</p>
+    </div>
+    <nav aria-label="Primary">
+      <a href="./index.html" aria-current="page">Home</a>
+      <a href="./help.html">Help</a>
+    </nav>
+  </header>
+
+  <main class="app-shell">
+    <section class="product-intro" aria-labelledby="productChooserTitle">
+      <div class="eyebrow">WEB-FIRST RNA-SEQ</div>
+      <div class="product-intro-copy">
+        <div>
+          <h2 id="productChooserTitle">Choose the analysis that matches your question</h2>
+          <p>Kallisto and HISAT2 + featureCounts answer different scientific questions. The established browser workflow remains the recommended starting point while the genome-alignment workflow is validated.</p>
+        </div>
+        <a class="text-link" href="./help.html#methods">Compare methods</a>
+      </div>
+
+      <div class="workflow-card-grid">
+        <article class="workflow-card workflow-card-primary">
+          <div class="workflow-card-head">
+            <span class="release-badge release-stable">Stable · Recommended</span>
+            <span class="workflow-number" aria-hidden="true">01</span>
+          </div>
+          <h3>Kallisto in browser</h3>
+          <p>Transcriptome pseudoalignment and transcript-level quantification. Produces estimated counts and transcript TPM without installing software.</p>
+          <a class="workflow-action" href="#kallisto-workflow">Open stable workflow</a>
+        </article>
+
+        <article class="workflow-card">
+          <div class="workflow-card-head">
+            <span class="release-badge release-experimental">Experimental · W5 passed</span>
+            <span class="workflow-number" aria-hidden="true">02</span>
+          </div>
+          <h3>HISAT2 + featureCounts in browser</h3>
+          <p>Genome alignment followed by annotation-based gene counting. It uses hosted prebuilt references and may exceed browser memory or storage limits.</p>
+          <div class="workflow-actions">
+            <a class="workflow-action" href="./hisat2-workflow.html">Open experimental workflow</a>
+            <a class="workflow-action workflow-action-muted" href="./reference-cache.html">Manage hosted reference cache</a>
+          </div>
+        </article>
+
+        <article class="workflow-card">
+          <div class="workflow-card-head">
+            <span class="release-badge release-planned">Planned after Web gate</span>
+            <span class="workflow-number" aria-hidden="true">03</span>
+          </div>
+          <h3>Desktop app</h3>
+          <p>Planned for custom HISAT2 index builds, larger references, and long-running jobs. No installer is available yet.</p>
+          <span class="workflow-action workflow-action-muted">Desktop is not released</span>
+        </article>
+      </div>
+
+      <div class="science-boundary">
+        <strong>Do not compare the outputs as interchangeable quantities.</strong>
+        <span>Kallisto reports transcript-level estimates; featureCounts will report annotation-derived gene-level raw counts, Length, and gene TPM.</span>
+      </div>
+    </section>
+
+    <section class="capability-panel" aria-labelledby="capabilityTitle">
+      <div>
+        <div class="section-kicker">Environment check</div>
+        <h2 id="capabilityTitle">Browser capability and local storage</h2>
+        <p>The stable Kallisto path requires the packaged Memory64 runtime and cross-origin isolation. Experimental HISAT2 additionally requires validated file-backed storage and checksum support.</p>
+      </div>
+      <ul id="capabilityList" class="capability-list" aria-live="polite">
+        <li>Checking browser capabilities…</li>
+      </ul>
+      <div class="capability-summary">
+        <p><strong>Local storage:</strong> <span id="capabilityStorage">Checking quota…</span></p>
+        <p><strong>HISAT2 browser:</strong> <span id="hisat2Availability">Checking requirements…</span></p>
+      </div>
+    </section>
+
+    <section class="privacy-banner">
+      <div>
+        <strong>Local-only analysis.</strong>
+        <span> Your FASTQ, transcriptome, annotation, and results are not uploaded for analysis. The experimental HISAT2 workflow downloads the selected hosted index and annotation; that is distinct from uploading your reads.</span>
+      </div>
+    </section>
+
+    <section id="kallisto-workflow" class="workflow-heading" aria-labelledby="kallistoWorkflowTitle">
+      <div>
+        <div class="section-kicker">Stable browser workflow</div>
+        <h2 id="kallistoWorkflowTitle">Kallisto pseudoalignment and quantification</h2>
+      </div>
+      <span class="release-badge release-stable">kallisto 0.52.0</span>
+    </section>
+
+    <section class="status-strip" aria-live="polite">
+      <div>
+        <span class="status-label">Progress</span>
+        <strong id="progressStatus">Not started</strong>
+      </div>
+      <div>
+        <span class="status-label">Local data</span>
+        <strong id="localDataStatus">No reference or reads selected</strong>
+      </div>
+      <div>
+        <span class="status-label">Runtime</span>
+        <strong id="runtimeStatus">Checking kallisto WebAssembly...</strong>
+      </div>
+    </section>
+
+    <section class="step-card">
+      <div class="step-head">
+        <h2><span class="step-number">STEP 1.</span> Select reference</h2>
+      </div>
+      <div class="mode-grid">
+        <label class="mode-option">
+          <input type="radio" name="referenceMode" value="build" checked>
+          <span>Build index from transcriptome FASTA</span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="referenceMode" value="existing">
+          <span>Use existing kallisto index</span>
+        </label>
+      </div>
+
+      <div id="buildReferencePanel" class="reference-panel">
+        <div class="file-picker-card">
+          <label for="transcriptomeFile"><span>Transcriptome FASTA / FASTA.gz</span></label>
+          <input id="transcriptomeFile" type="file" accept=".fa,.fasta,.fna,.ffn,.fa.gz,.fasta.gz,.fna.gz,.gz,text/plain,application/gzip">
+          <p id="transcriptomeMeta" class="file-meta">No transcriptome selected.</p>
+        </div>
+      </div>
+
+      <div id="existingReferencePanel" class="reference-panel" hidden>
+        <div class="file-picker-card">
+          <label for="indexFile"><span>kallisto index (.idx)</span></label>
+          <input id="indexFile" type="file" accept=".idx,application/octet-stream">
+          <p id="indexMeta" class="file-meta">No index selected.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="indexSection" class="step-card">
+      <div class="step-head">
+        <h2><span class="step-number">STEP 2.</span> Build kallisto index</h2>
+      </div>
+      <div class="parameter-grid">
+        <label class="inline-check kallisto-fastp-toggle">
+          <input id="runKallistoFastp" type="checkbox">
+          <span><strong>Run fastp preprocessing</strong> (optional; default OFF)</span>
+          <small class="field-help">OFF preserves the established Kallisto path. ON retains cleaned FASTQ and QC reports for download.</small>
+        </label>
+        <label id="kallistoFastpThreadsField" hidden>
+          <span>fastp threads</span>
+          <select id="kallistoFastpThreads">
+            <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+          </select>
+        </label>
+        <label id="kallistoFastpLengthField" hidden>
+          <span>fastp minimum read length</span>
+          <input id="kallistoFastpLength" type="number" min="1" max="100000" step="1" value="15">
+        </label>
+        <label>
+          <span>k-mer size</span>
+          <input id="kmerSize" type="number" min="1" max="31" step="2" value="31">
+        </label>
+        <label>
+          <span>Threads</span>
+          <input id="indexThreads" type="number" min="1" max="8" step="1" value="1">
+        </label>
+        <label class="inline-check">
+          <input id="makeUnique" type="checkbox">
+          <span>Make repeated target names unique</span>
+        </label>
+      </div>
+      <p class="small-note">The input must be a transcriptome FASTA, not a genomic DNA FASTA.</p>
+      <pre id="indexCommandPreview" class="command-preview"></pre>
+      <div class="index-actions">
+        <button id="buildIndexButton" type="button" disabled>Build kallisto index locally</button>
+        <button id="downloadIndexButton" type="button" class="download-button" disabled>Download generated index</button>
+        <button id="cancelIndexButton" type="button" class="danger-button" disabled>Stop</button>
+      </div>
+      <div id="indexProgress" class="progress-block" hidden>
+        <strong id="indexProgressLabel">Preparing index...</strong>
+        <div class="progress-track" aria-hidden="true"><div class="progress-bar"></div></div>
+        <span id="indexElapsed" class="small-note">0 sec</span>
+      </div>
+      <pre id="indexLog" class="log-console" hidden></pre>
+    </section>
+
+    <section class="step-card">
+      <div class="step-head">
+        <h2><span class="step-number">STEP 3.</span> Select RNA-seq reads</h2>
+      </div>
+      <div class="mode-grid">
+        <label class="mode-option">
+          <input type="radio" name="readMode" value="paired" checked>
+          <span>Paired-end</span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="readMode" value="single">
+          <span>Single-end</span>
+        </label>
+      </div>
+
+      <div id="sampleCards" class="sample-card-list"></div>
+      <div class="sample-actions">
+        <button id="addSampleButton" type="button" class="secondary-button">+ Add sample</button>
+      </div>
+      <p class="small-note">Samples run sequentially in one WebAssembly Worker. For lane-split data, choose matching R1/R2 files in the same selection order.</p>
+    </section>
+
+    <section class="step-card">
+      <div class="step-head">
+        <h2><span class="step-number">STEP 4.</span> Set quantification parameters</h2>
+      </div>
+      <div class="parameter-grid">
+        <label>
+          <span>Threads</span>
+          <input id="quantThreads" type="number" min="1" max="8" step="1" value="1" aria-describedby="quantThreadsNote">
+          <small id="quantThreadsNote" class="field-help">Increasing the thread count does not necessarily result in a substantial speedup; performance depends on the workload and system architecture.</small>
+        </label>
+        <label>
+          <span>Bootstrap samples</span>
+          <input id="bootstrapSamples" type="number" min="0" max="10000" step="1" value="0">
+        </label>
+        <label>
+          <span>Random seed</span>
+          <input id="seed" type="number" step="1" value="42">
+        </label>
+        <label>
+          <span>Library strandedness</span>
+          <select id="strandedness">
+            <option value="unstranded" selected>Unstranded</option>
+            <option value="fr">FR-stranded</option>
+            <option value="rf">RF-stranded</option>
+          </select>
+        </label>
+        <label id="fragmentLengthField" hidden>
+          <span>Average fragment length (single-end)</span>
+          <input id="fragmentLength" type="number" min="1" step="0.1" value="200">
+        </label>
+        <label id="fragmentSdField" hidden>
+          <span>Fragment length SD (single-end)</span>
+          <input id="fragmentSd" type="number" min="0.1" step="0.1" value="20">
+        </label>
+        <label id="singleOverhangField" class="inline-check" hidden>
+          <input id="singleOverhang" type="checkbox">
+          <span>Single-overhang</span>
+        </label>
+      </div>
+      <p class="small-note"><strong>Plaintext output is always enabled.</strong></p>
+      <pre id="quantCommandPreview" class="command-preview"></pre>
+    </section>
+
+    <section class="step-card">
+      <div class="step-head">
+        <h2><span class="step-number">STEP 5.</span> Run quantification</h2>
+      </div>
+      <div id="preflightMessage" class="callout-warning">Select a usable reference and RNA-seq reads.</div>
+      <div class="quant-actions">
+        <button id="runQuantButton" type="button" disabled>Run kallisto quant locally</button>
+        <button id="cancelQuantButton" type="button" class="danger-button" disabled>Stop</button>
+      </div>
+      <div id="quantProgress" class="progress-block" hidden>
+        <strong id="quantProgressLabel">Preparing quantification...</strong>
+        <div class="batch-progress-summary">
+          <span id="overallProgress">Overall progress: 0 / 1</span>
+          <span id="currentSample">Current sample: —</span>
+        </div>
+        <div class="progress-track" aria-hidden="true"><div id="batchProgressBar" class="batch-progress-bar"></div></div>
+        <div id="batchStatusList" class="batch-status-list"></div>
+        <span id="quantElapsed" class="small-note">0 sec</span>
+      </div>
+      <pre id="quantLog" class="log-console" hidden></pre>
+    </section>
+
+    <section id="resultsSection" class="step-card results-section" hidden>
+      <div class="step-head">
+        <h2><span class="step-number">STEP 6.</span> Results</h2>
+      </div>
+      <div id="summaryCards" class="summary-grid"></div>
+
+      <h3>Batch matrices</h3>
+      <div id="matrixFiles" class="result-file-grid"></div>
+
+      <h3>Sample output files</h3>
+      <div id="sampleResults" class="sample-result-list"></div>
+      <div class="result-actions fastp-cleanup-actions">
+        <button id="deleteKallistoFastp" type="button" class="danger-button" hidden>Delete retained cleaned FASTQ</button>
+        <span id="kallistoFastpCleanupStatus" class="small-note"></span>
+      </div>
+
+      <h3>abundance.tsv preview</h3>
+      <div id="abundancePreview"></div>
+
+      <h3>Analysis log</h3>
+      <pre id="analysisLog" class="analysis-log"></pre>
+    </section>
+  </main>
+
+  <script type="module" src="./js/app.js?v=20260820-w6"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+The native validation binary is not a Web distribution artifact. It was built
+against exact Ubuntu 22.04 packages extracted locally without system install:
+
+ISA-L / libisal 2.30.0-4 — BSD-3-Clause
+Copyright 2011-2019 Intel Corporation.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that source redistributions retain the
+copyright notice, conditions and disclaimer; binary redistributions reproduce
+them in documentation/materials; and Intel/contributor names are not used for
+endorsement without permission. The software is provided "AS IS" without
+warranty, and the copyright owner/contributors are not liable for damages.
+
+libdeflate 1.10-2 — MIT/Expat
+Copyright 2016, 2018 Eric Biggers; applicable arm component notice also names
+Jun He (2017).
+
+Permission is granted, free of charge, to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies, provided that the copyright and
+permission notices are included. The software is provided "AS IS" without
+warranty or liability.
+
+Canonical package notices are extracted by prepare-native-deps.sh under
+.w2-cache/native-deps/root/usr/share/doc/{libisal2,libdeflate0}/copyright.

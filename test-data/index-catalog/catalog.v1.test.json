@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "references": [
+    {
+      "id": "synthetic-chrtiny-hisat2-2.2.3-v1",
+      "display_name": "Synthetic chrTiny / fixture annotation v1",
+      "organism": "Synthetic construct",
+      "assembly": "chrTiny-v1",
+      "hisat2_version": "2.2.3",
+      "index_format": "ht2",
+      "build_arguments": [
+        "--ss",
+        "splice-sites.txt",
+        "--exon",
+        "exons.txt",
+        "genome.fa",
+        "tiny"
+      ],
+      "files": [
+        { "name": "tiny.1.ht2", "url": "../hisat2/native/index/tiny.1.ht2", "size": 4194805, "sha256": "f9fe9179458fedd59068e273421ef953c3260ee0029ac706423e3237af4c6757" },
+        { "name": "tiny.2.ht2", "url": "../hisat2/native/index/tiny.2.ht2", "size": 68, "sha256": "13561c6475d09c0c877cb0671d79c619335ba784a58f969d5e753e185178fe42" },
+        { "name": "tiny.3.ht2", "url": "../hisat2/native/index/tiny.3.ht2", "size": 17, "sha256": "db2e2df46d00fa449eb916f612a64b4d7f5f789bc1fb5ff1caff1a79866b06af" },
+        { "name": "tiny.4.ht2", "url": "../hisat2/native/index/tiny.4.ht2", "size": 60, "sha256": "19e7259ab54f8941dd7ccb4a5035e3f30a366cd52122a2148aecc28a1309529f" },
+        { "name": "tiny.5.ht2", "url": "../hisat2/native/index/tiny.5.ht2", "size": 8561, "sha256": "123c3acb57356055eb4a863f7283c671f200c053fd8e7eda188e5ca86111c7d8" },
+        { "name": "tiny.6.ht2", "url": "../hisat2/native/index/tiny.6.ht2", "size": 66, "sha256": "d84026fcf09ca288629625fa3da1d0e628da430fa89435cc960986d24e4fcceb" },
+        { "name": "tiny.7.ht2", "url": "../hisat2/native/index/tiny.7.ht2", "size": 72, "sha256": "e57f1d6ac735c681ec8c150fbd5c2d1bdc1f909b920311255d8416ed294c05bf" },
+        { "name": "tiny.8.ht2", "url": "../hisat2/native/index/tiny.8.ht2", "size": 21, "sha256": "91e260b7243c525f0e36204bae76616d9e2a3427debf7aae1ff83fe2d98458e5" }
+      ],
+      "annotation": {
+        "name": "annotation.gtf",
+        "format": "GTF",
+        "version": "fixture-v1",
+        "url": "../hisat2/inputs/annotation.gtf",
+        "size": 137,
+        "sha256": "509fdeec2259569e908c5d33b7ee90c0f4462d19b7c9b00648ea88926b908c55",
+        "default_feature_type": "exon",
+        "default_grouping_attribute": "gene_id",
+        "contigs": ["chrTiny"]
+      },
+      "contigs": [
+        { "name": "chrTiny", "length": 240 }
+      ],
+      "source_urls": [
+        "https://github.com/DaehwanKimLab/hisat2/tree/0d244324f98de541bce04d45c75e83bc3522f7f4",
+        "../hisat2/inputs/genome.fa",
+        "../hisat2/inputs/annotation.gtf"
+      ],
+      "licenses": [
+        "HISAT2: GPL-3.0-or-later",
+        "Synthetic fixture: repository test data only"
+      ],
+      "created_at": "2026-08-17T02:12:45.321Z",
+      "test_only": true
+    }
+  ]
+}

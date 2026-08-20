@@ -1,0 +1,9 @@
+schema_version=1
+started_at=2026-08-20T15:06:27+09:00
+ended_at=2026-08-20T17:04:14+09:00
+threads=4
+hisat2_version=/mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/.w2-cache/sources/hisat2-v2.2.3/hisat2-build-s version 2.2.3
+featurecounts_version=
+hisat2_build_args=--threads 4 genome.fa index/colcc-v2
+hisat2_align_args=--dta -p 4 -x index/colcc-v2 -1 reads_R1.fastq -2 reads_R2.fastq -S run.sam
+featurecounts_args=-T 4 -s 0 -p --countReadPairs -t exon -g gene_id -a annotation.gtf -o featureCounts.txt run.sam

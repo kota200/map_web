@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-08-18T00:00:00+09:00",
+  "scope": "user-provided representative Arabidopsis data. The genome FASTA and GFF3 have matching Chr1-Chr5 contigs; the data is not yet a complete HISAT2 package because it has no HISAT2 2.2.3 index or native alignment/count baseline.",
+  "files": [
+    {
+      "role": "genome-fasta-gzip",
+      "name": "Col-CC_v2_genome.fasta.gz",
+      "relative_path_from_workspace": "example_data/Col-CC_v2_genome.fasta.gz",
+      "size_bytes": 39229219,
+      "sha256": "75570fce3df601202e4ed09c7518ffb8d943fd836cf22c8d91ad486b86e97298"
+    },
+    {
+      "role": "annotation-gff3-gzip",
+      "name": "TAIR12_1Feb26.gff3.gz",
+      "relative_path_from_workspace": "example_data/TAIR12_1Feb26.gff3.gz",
+      "size_bytes": 11736401,
+      "sha256": "2be0bc39f0c94a6401a60882c47e28736d9602daefef19fb9183dc49de48bdda"
+    },
+    {
+      "role": "transcriptome-cdna",
+      "name": "TAIR12_cdna.fasta",
+      "relative_path_from_workspace": "example_data/TAIR12_cdna.fasta",
+      "size_bytes": 90392408,
+      "sha256": "f684458f2b507c56b95c5b97a605e88a8573714eb5e0571b7093e97b75a6889c"
+    },
+    {
+      "role": "paired-read-1",
+      "name": "Unknown_CO100-001U0001_good_1.fq.gz",
+      "relative_path_from_workspace": "example_data/Unknown_CO100-001U0001_good_1.fq.gz",
+      "size_bytes": 1550059107,
+      "sha256": "c06381d50b4a3992b5648a3f3acf1012175801948528886b62f62c12c5dea3bd"
+    },
+    {
+      "role": "paired-read-2",
+      "name": "Unknown_CO100-001U0001_good_2.fq.gz",
+      "relative_path_from_workspace": "example_data/Unknown_CO100-001U0001_good_2.fq.gz",
+      "size_bytes": 1552453396,
+      "sha256": "55fbee8f2ed2be3a59d6da1bd331e95fe6cd8cce1fee25eccd5dab4b75d719a7"
+    }
+  ],
+  "first_pair": {
+    "normalized_read_id": "LH00330:384:22KNCNLT4:8:1101:0:789",
+    "read_length": 150,
+    "r1_suffix": "1:N:0:GATCACGG+GCGATCCG",
+    "r2_suffix": "2:N:0:GATCACGG+GCGATCCG"
+  },
+  "missing_for_representative_hisat2": [
+    "prebuilt HISAT2 index or approved production catalog URL",
+    "native expected alignment/count baseline"
+  ]
+}

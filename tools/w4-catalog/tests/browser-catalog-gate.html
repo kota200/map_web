@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>W4 hosted index catalog gate</title>
+  <style>
+    :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #101418; color: #e8eef2; }
+    body { max-width: 960px; margin: 3rem auto; padding: 0 1.5rem; }
+    h1 { font-size: 1.5rem; }
+    #status { padding: .8rem 1rem; border: 1px solid #52606a; border-radius: .5rem; }
+    #status[data-state="passed"] { border-color: #36c28b; color: #8ce7bf; }
+    #status[data-state="failed"] { border-color: #e65e68; color: #ff9ca4; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #171d22; padding: 1rem; border-radius: .5rem; }
+  </style>
+</head>
+<body>
+  <h1>Phase W4 — hosted HISAT2 index catalog gate</h1>
+  <p id="status" data-state="running">Running manifest, OPFS cache, and recovery checks…</p>
+  <pre id="output" data-result=""></pre>
+  <script type="module" src="./browser-catalog-gate.mjs"></script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+{
+  "schema_version": 2,
+  "phase": "W6",
+  "status": "in_progress",
+  "observed_on": "2026-08-20",
+  "environment": {
+    "browser": "Chrome 151.0.0.0",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "os": "Windows x64",
+    "cross_origin_isolated": true
+  },
+  "instrumentation": {
+    "method": "Capture the shared imported WebAssembly.Memory through Emscripten's instantiateWasm hook and report its final buffer.byteLength.",
+    "high_water_rationale": "WebAssembly.Memory grows monotonically and does not shrink, so final linear-memory byteLength is the per-Worker high-water allocation.",
+    "scope": "Wasm linear-memory allocation only; this is not browser-process or operating-system resident memory.",
+    "initial_linear_memory_bytes": 268435456,
+    "maximum_linear_memory_bytes": 3221225472
+  },
+  "regression_rerun": {
+    "state": "passed",
+    "archived_scientific_outputs_unchanged": true,
+    "kallisto_index_bytes": 2012,
+    "kallisto_index_sha256": "aa60882d699ed4f66061f3c0612d58dd4552abc4ac54dd24e628646e30614bcc",
+    "abundance_sha256": "c5facb8e653e9549d3805164e1ad6a669da3acc67a1b8a99981fca4b32ed5e12",
+    "worker_mismatch_rejection": "passed",
+    "worker_cancellation": "passed",
+    "w6_fastp_off_on_gate": "passed",
+    "small_fixture_peak_linear_memory_bytes": 268435456,
+    "remaining_w6_opfs_entries": 0,
+    "w6_browser_gate": {
+      "index_elapsed_ms": 487.87,
+      "fastp_off_quant_elapsed_ms": 114.41,
+      "fastp_on_preprocess_elapsed_ms": 377.1,
+      "fastp_on_quant_elapsed_ms": 109.025,
+      "main_js_heap_before_bytes": 13489389,
+      "main_js_heap_after_bytes": 14793032,
+      "browser_storage_before_bytes": 696,
+      "browser_storage_after_bytes": 696,
+      "failure_gates": [
+        "QuotaPreflightError",
+        "WebResourceLimitError",
+        "IntegrityError: SHA-256 mismatch",
+        "IntegrityError: annotation/index contig mismatch"
+      ]
+    }
+  },
+  "representative_kallisto": {
+    "reference": {
+      "path_role": "example_data/TAIR12_cdna.fasta",
+      "bytes": 90392408,
+      "records": 54715,
+      "sha256": "f684458f2b507c56b95c5b97a605e88a8573714eb5e0571b7093e97b75a6889c"
+    },
+    "reads": {
+      "mode": "paired",
+      "compression": "gzip",
+      "r1_bytes": 1550059107,
+      "r2_bytes": 1552453396,
+      "total_bytes": 3102512503
+    },
+    "index": {
+      "elapsed_sec": 201,
+      "bytes": 141751322,
+      "wasm_peak_linear_memory_bytes": 1120010240,
+      "wasm_peak_display_note": "The product UI displays 1.04 GB using binary 1024-based scaling (1.04 GiB).",
+      "graph_contigs": 209567,
+      "k_mers": 47602966,
+      "comparison_with_2026_08_18": "The earlier build was 141752090 bytes (768 bytes larger) while graph-contig and k-mer counts were identical; representative index byte-for-byte determinism is not claimed."
+    },
+    "quant": {
+      "fastp": false,
+      "threads": 1,
+      "elapsed_sec": 882,
+      "processed_reads": 23809408,
+      "pseudoaligned_reads": 23373083,
+      "pseudoaligned_percent": 98.167426,
+      "wasm_peak_linear_memory_mib_rounded": 747.8,
+      "wasm_peak_display_note": "The product UI uses binary 1024-based units but currently labels the unit MB. The unrounded value is written into the generated browser_performance.json; the in-app validation browser did not persist that download externally, so this frozen report records the observed rounded value without inventing an exact byte count.",
+      "worker_batches": 214,
+      "worker_total_sec": 605.395519,
+      "worker_fetch_sec": 82.218921,
+      "worker_process_sec": 521.146796,
+      "worker_update_sec": 1.997255,
+      "read_batch_bytes": 33554432,
+      "gzip_buffer_bytes": 1048576,
+      "em_rounds": 1174,
+      "outputs": [
+        "abundance.tsv",
+        "run_info.json",
+        "browser_performance.json",
+        "counts_matrix.tsv",
+        "tpm_matrix.tsv"
+      ]
+    },
+    "storage": {
+      "input_boundary": "read-only File/Blob through WORKERFS",
+      "fastp_opfs_entries": 0,
+      "index_and_standard_outputs": "memory-backed"
+    },
+    "memory": {
+      "wasm_linear_memory_high_water_measured": true,
+      "os_resident_memory_measured": false,
+      "portable_support_threshold_claimed": false
+    }
+  },
+  "browser_availability": {
+    "firefox": "Not installed in the Windows validation environment on 2026-08-20.",
+    "safari": "Not available on the Windows validation environment; requires macOS hardware/environment."
+  },
+  "open_release_blockers": [
+    "production HISAT2 genome, annotation, exact-version prebuilt index, and native expected output",
+    "approved HTTPS catalog/CDN with provenance and licensing",
+    "representative HISAT2 memory, storage, runtime, eviction, retry, and scientific agreement",
+    "Firefox measurement",
+    "Safari measurement"
+  ],
+  "desktop_phase_allowed": false
+}

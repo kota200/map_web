@@ -1,0 +1,7 @@
+v7 stack fix
+
+Main WebAssembly stack: 8 MiB (-sSTACK_SIZE=8388608)
+Default pthread stack: 8 MiB (-sDEFAULT_PTHREAD_STACK_SIZE=8388608)
+Debug stack checks: ASSERTIONS=2, STACK_OVERFLOW_CHECK=2
+
+Reason: v6 caught an overflow with stack limits separated by exactly 65536 bytes, the Emscripten default stack size.

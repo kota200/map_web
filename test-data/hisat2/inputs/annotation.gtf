@@ -1,0 +1,2 @@
+chrTiny	fixture	exon	1	80	.	+	.	gene_id "g1"; transcript_id "tx1";
+chrTiny	fixture	exon	161	240	.	+	.	gene_id "g1"; transcript_id "tx1";

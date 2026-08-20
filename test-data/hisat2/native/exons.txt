@@ -1,0 +1,2 @@
+chrTiny	0	79	+
+chrTiny	160	239	+

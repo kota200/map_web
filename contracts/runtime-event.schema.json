@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rna-seq-local.invalid/contracts/runtime-event.schema.json",
+  "title": "RNA-seq runtime event",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "type", "timestamp", "level", "message"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "type": { "const": "log" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "job_id": { "type": "string" },
+        "sample": { "type": "string" },
+        "stage": { "enum": ["preflight", "download", "fastp", "kallisto", "hisat2", "featureCounts", "tpm", "cleanup"] },
+        "level": { "enum": ["debug", "info", "warning", "error"] },
+        "message": { "type": "string" }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "type", "timestamp", "stage", "kind", "message"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "type": { "const": "progress" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "job_id": { "type": "string" },
+        "sample": { "type": "string" },
+        "stage": { "enum": ["preflight", "download", "fastp", "kallisto", "hisat2", "featureCounts", "tpm", "cleanup"] },
+        "kind": { "enum": ["determinate", "indeterminate"] },
+        "completed": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 },
+        "unit": { "enum": ["bytes", "files", "samples", "records"] },
+        "elapsed_ms": { "type": "integer", "minimum": 0 },
+        "message": { "type": "string" }
+      }
+    }
+  ]
+}

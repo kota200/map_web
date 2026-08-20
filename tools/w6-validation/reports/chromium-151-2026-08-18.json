@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "phase": "W6",
+  "status": "in_progress",
+  "observed_on": "2026-08-18",
+  "environment": {
+    "browser": "Chrome 151.0.0.0",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "os": "Windows x64",
+    "cross_origin_isolated": true
+  },
+  "small_browser_gate": {
+    "state": "passed",
+    "kallisto_index_bytes": 2012,
+    "kallisto_index_elapsed_ms": 496.045,
+    "fastp_off_quant_elapsed_ms": 89.15,
+    "fastp_on_preprocess_elapsed_ms": 314.665,
+    "fastp_on_quant_elapsed_ms": 73.33,
+    "fastp_before_reads": 4,
+    "fastp_after_reads": 4,
+    "fastp_retained_then_deleted_entries": 2,
+    "cancel_error_name": "AbortError",
+    "remaining_w6_opfs_entries": 0,
+    "main_js_heap_before_bytes": 4092343,
+    "main_js_heap_after_bytes": 6356492,
+    "browser_storage_before_bytes": 696,
+    "browser_storage_after_bytes": 696,
+    "failure_gates": [
+      "QuotaPreflightError",
+      "WebResourceLimitError",
+      "IntegrityError: SHA-256 mismatch",
+      "IntegrityError: annotation/index contig mismatch"
+    ]
+  },
+  "w5_regression_rerun": {
+    "state": "passed",
+    "se_two_sample_elapsed_ms": 1474.4,
+    "raw_gzip_fastp_off_elapsed_ms": 624.1,
+    "paired_fragment_elapsed_ms": 530.4,
+    "fastp_on_elapsed_ms": 818.7,
+    "remaining_w5_opfs_entries": 0
+  },
+  "representative_kallisto": {
+    "reference": {
+      "path_role": "example_data/TAIR12_cdna.fasta",
+      "bytes": 90392408,
+      "records": 54715,
+      "sha256": "f684458f2b507c56b95c5b97a605e88a8573714eb5e0571b7093e97b75a6889c"
+    },
+    "reads": {
+      "mode": "paired",
+      "compression": "gzip",
+      "r1_bytes": 1550059107,
+      "r2_bytes": 1552453396,
+      "total_bytes": 3102512503
+    },
+    "index": {
+      "elapsed_sec": 181,
+      "bytes": 141752090,
+      "graph_contigs": 209567,
+      "k_mers": 47602966
+    },
+    "quant": {
+      "fastp": false,
+      "threads": 1,
+      "elapsed_sec": 937,
+      "processed_reads": 23809408,
+      "pseudoaligned_reads": 23373083,
+      "pseudoaligned_percent": 98.167426,
+      "worker_batches": 214,
+      "worker_total_sec": 600.071,
+      "read_batch_bytes": 33554432,
+      "gzip_buffer_bytes": 1048576,
+      "em_rounds": 1174,
+      "outputs": [
+        "abundance.tsv",
+        "run_info.json",
+        "browser_performance.json"
+      ]
+    },
+    "storage": {
+      "input_boundary": "read-only File/Blob through WORKERFS",
+      "fastp_opfs_entries": 0,
+      "index_and_standard_outputs": "memory-backed"
+    },
+    "memory": {
+      "peak_measured": false,
+      "wasm_linear_memory_bytes": null,
+      "reason": "The current Worker does not export a heap view and intentionally reports null; the release memory gate remains open."
+    }
+  },
+  "open_release_blockers": [
+    "representative Kallisto peak/Wasm memory",
+    "production HISAT2 genome, annotation, exact-version prebuilt index, and native expected output",
+    "approved HTTPS catalog/CDN with provenance and licensing",
+    "representative HISAT2 memory, storage, runtime, eviction, retry, and scientific agreement",
+    "Firefox measurement",
+    "Safari measurement"
+  ],
+  "desktop_phase_allowed": false
+}

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' data: blob:; style-src 'self';">
+  <title>Help | RNA-seq Local</title>
+  <link rel="stylesheet" href="./css/kallisto-app.css?v=20260820-w6">
+</head>
+<body class="help-page">
+  <header class="site-header">
+    <div>
+      <h1>RNA-seq Local</h1>
+      <p>Browser-first RNA-seq analysis with a stable kallisto workflow.</p>
+    </div>
+    <nav aria-label="Primary">
+      <a href="./index.html">Home</a>
+      <a href="./help.html" aria-current="page">Help</a>
+    </nav>
+  </header>
+
+  <main class="app-shell help-manual">
+    <section class="step-card help-intro">
+      <div class="step-head"><h2>Manual</h2></div>
+      <p class="manual-lead">The current stable workflow runs the kallisto command-line engine as WebAssembly in your browser.</p>
+      <p>The app is designed so that transcriptome, index, FASTQ, and result files remain on the user's computer. The web server supplies only the application files and WebAssembly runtime.</p>
+    </section>
+
+    <section class="step-card">
+      <div class="step-head"><h2>Contents</h2></div>
+      <ol class="manual-toc">
+        <li><a href="#methods">Analysis methods</a></li>
+        <li><a href="#requirements">Requirements</a></li>
+        <li><a href="#reference">Reference and index</a></li>
+        <li><a href="#reads">RNA-seq reads</a></li>
+        <li><a href="#parameters">Quantification parameters</a></li>
+        <li><a href="#web-limits">HISAT2 Web limits</a></li>
+        <li><a href="#privacy">Local processing and privacy</a></li>
+        <li><a href="#outputs">Outputs</a></li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
+      </ol>
+    </section>
+
+    <section id="methods" class="step-card">
+      <div class="step-head"><h2>Analysis Methods</h2></div>
+      <div class="method-comparison">
+        <article>
+          <span class="release-badge release-stable">Stable · Recommended</span>
+          <h3>Kallisto in browser</h3>
+          <p>Uses a transcriptome reference and pseudoalignment. The primary outputs are transcript-level estimated counts and transcript TPM.</p>
+          <p>This is not conventional genome alignment, and its transcript TPM must not be presented as the same quantity as a gene TPM derived from featureCounts.</p>
+        </article>
+        <article>
+          <span class="release-badge release-experimental">Experimental · W5 passed · W6 pending</span>
+          <h3>HISAT2 + featureCounts in browser</h3>
+          <p>The experimental workflow aligns reads to a genome, assigns alignments to annotated features, and reports gene-level raw counts, Length, and gene TPM.</p>
+          <p>It accepts only hosted prebuilt HISAT2 indexes in the browser. The current catalog is a synthetic fixture; no production biological reference is configured.</p>
+          <p><a href="./hisat2-workflow.html">Open the experimental workflow</a></p>
+        </article>
+        <article>
+          <span class="release-badge release-planned">Planned after Web gate</span>
+          <h3>Desktop app</h3>
+          <p>The planned native desktop workflow is for custom index construction, large references, and long-running jobs. No installer has been built or validated yet.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="requirements" class="step-card">
+      <div class="step-head"><h2>Requirements</h2></div>
+      <ul class="manual-list">
+        <li><strong>Modern browser:</strong> Chrome 151 on Windows x64 is the only browser measured through W6 so far. Firefox and Safari are not supported claims for this release gate.</li>
+        <li><strong>WebAssembly runtime:</strong> <code>kallisto/kallisto.js</code> and <code>kallisto/kallisto.wasm</code> must be deployed with the app.</li>
+        <li><strong>Memory:</strong> index construction can require substantial RAM. The browser and operating system must have enough free memory for the selected transcriptome and generated index.</li>
+        <li><strong>HTTP/HTTPS:</strong> serve the app from a web server; do not open <code>index.html</code> directly with <code>file://</code>.</li>
+        <li><strong>Capability result:</strong> the Home page reports WebAssembly, Worker, pthread isolation, checksum, and browser-storage capabilities before offering the experimental HISAT2 workflow.</li>
+      </ul>
+    </section>
+
+    <section id="reference" class="step-card">
+      <div class="step-head"><h2>Reference and Index</h2></div>
+      <div class="manual-two-column">
+        <div><h3>Build from FASTA</h3><p>Select a transcriptome FASTA or FASTA.gz. Do not use a genome FASTA. The default k-mer size is 31.</p></div>
+        <div><h3>Existing Index</h3><p>You can skip index construction by selecting a previously created kallisto <code>.idx</code> file. Use an index created by a compatible recent kallisto version; building the index in this app is the safest option.</p></div>
+        <div><h3>Generated Index</h3><p>After construction, the index remains local in browser memory and can immediately be used for quantification. You can also download it for reuse.</p></div>
+        <div><h3>Target Names</h3><p>Use <strong>Make repeated target names unique</strong> only when the transcriptome contains duplicate FASTA identifiers and you intentionally want kallisto to rename them.</p></div>
+      </div>
+    </section>
+
+    <section id="reads" class="step-card">
+      <div class="step-head"><h2>RNA-seq Reads</h2></div>
+      <p>FASTQ and FASTQ.gz are supported. For paired-end data, select matching R1 and R2 files in each sample card. If one biological sample is split across lanes, select all of its lane files in that card; files are paired by selection order.</p>
+      <p class="manual-note">Use <strong>+ Add sample</strong> for additional biological samples. Samples run sequentially in one WebAssembly Worker to keep memory bounded; they are never quantified concurrently.</p>
+    </section>
+
+    <section id="parameters" class="step-card">
+      <div class="step-head"><h2>Quantification Parameters</h2></div>
+      <div class="manual-two-column">
+        <div><h3>Threads</h3><p>Controls kallisto worker threads when the WebAssembly build supports pthreads. The v10 build supports up to eight quantification workers. Increasing the thread count does not necessarily result in a substantial speedup because performance depends on the workload and system architecture.</p></div>
+        <div><h3>Bootstrap Samples</h3><p>Default is 0. Increase this only when bootstrap abundance estimates are required; additional bootstraps increase runtime.</p></div>
+        <div><h3>Strandedness</h3><p>Select unstranded, FR-stranded, or RF-stranded according to the RNA-seq library protocol.</p></div>
+        <div><h3>Single-end Reads</h3><p>Single-end mode requires the estimated average fragment length and its standard deviation.</p></div>
+        <div><h3>Optional fastp</h3><p>Kallisto fastp defaults OFF to preserve the established input path. When enabled, samples run sequentially through fastp before Kallisto; JSON, HTML, QC summary, and cleaned gzip FASTQ are downloadable. Cleaned FASTQ remains in browser storage until you use the explicit delete action, replace it with another run, or leave the page.</p></div>
+        <div><h3>Plaintext Output</h3><p>The browser build always uses <code>--plaintext</code>. This avoids an HDF5 dependency and produces <code>abundance.tsv</code>.</p></div>
+        <div><h3>v10 performance build</h3><p>The v10 Wasm runtime is compiled with <code>-O3</code>, LTO (<code>-flto</code>), WebAssembly SIMD128 (<code>-msimd128</code>), and the vendored zlib-ng library in zlib-compatible mode.</p></div>
+      </div>
+    </section>
+
+    <section id="web-limits" class="step-card">
+      <div class="step-head"><h2>HISAT2 Web Limits and Desktop Recommendation</h2></div>
+      <p>The experimental HISAT2 form performs a storage-and-scale preflight before downloading a reference or starting a job. Its estimates are conservative heuristics, not measured percentages or a guarantee.</p>
+      <ul class="manual-list">
+        <li><strong>Hosted reference envelope:</strong> an index/annotation payload at or above 1.5 GiB is rejected by the current Web gate. HISAT2-Wasm and featureCounts-Wasm each have an audited 2 GiB linear-memory maximum, but peak biological-data usage is not yet measured.</li>
+        <li><strong>Storage headroom:</strong> the form reserves the hosted package, estimated decompressed/cleaned FASTQ and SAM, plus 256 MiB. A job is rejected when the browser reports less available storage.</li>
+        <li><strong>Desktop recommendation:</strong> compressed input at or above 2 GiB, or an estimated temporary footprint at or above 2 GiB, is beyond the measured small HISAT2 Web envelope. Use the future desktop workflow for such jobs after it is released; there is no desktop installer yet.</li>
+        <li><strong>Current production status:</strong> only the 4,203,807-byte synthetic <code>chrTiny</code> package has passed end to end. Do not use it for biological interpretation.</li>
+      </ul>
+      <p>For context, the instrumented W6 Kallisto measurement successfully processed the supplied 3.10 GB paired gzip FASTQ against a 135.2 MB Arabidopsis transcriptome index in Chrome in 882 seconds with one thread. The index build reached a 1,120,010,240-byte Wasm linear-memory high water; quantification showed a rounded 747.8 MiB high water. These are Wasm allocation measurements, not OS resident-memory measurements, and do not validate HISAT2 at the same scale.</p>
+    </section>
+
+    <section id="privacy" class="step-card">
+      <div class="step-head"><h2>Local Processing and Privacy</h2></div>
+      <p>The application uses browser <code>File</code>/<code>Blob</code> objects and Emscripten WORKERFS. Selected biological files are mounted read-only inside a Web Worker and are not posted to the server by this application.</p>
+      <p>The browser still downloads the static HTML, JavaScript, and WebAssembly application files when the site is opened. The experimental HISAT2 workflow also downloads the selected hosted index and annotation. These downloads are different from uploading the user's RNA-seq data.</p>
+      <p>No telemetry is added by this build.</p>
+    </section>
+
+    <section id="outputs" class="step-card">
+      <div class="step-head"><h2>Outputs</h2></div>
+      <ul class="manual-list">
+        <li><strong>abundance.tsv:</strong> transcript-level abundance estimates including estimated counts and TPM.</li>
+        <li><strong>run_info.json:</strong> standard kallisto run metadata and mapping/pseudoalignment summary.</li>
+        <li><strong>browser_performance.json:</strong> browser wall-clock timings for Wasm initialization, index loading, FASTQ processing/pseudoalignment, EM, output generation, total runtime, read throughput, and Wasm linear-memory high water. The memory value is an allocation measure, not OS resident memory.</li>
+        <li><strong>counts_matrix.tsv / tpm_matrix.tsv:</strong> batch matrices aligned and validated by <code>target_id</code>; estimated counts retain kallisto's fractional values.</li>
+        <li><strong>transcripts.idx:</strong> available for download when an index is built in the browser.</li>
+        <li><strong>HISAT2 workflow:</strong> per-sample counts, counts with gene TPM, raw featureCounts tables and summary, HISAT2 summary, run metadata and logs; optional fastp cleaned FASTQ/JSON/HTML; batch matrices and manifest.</li>
+      </ul>
+    </section>
+
+    <section id="troubleshooting" class="step-card">
+      <div class="step-head"><h2>Troubleshooting</h2></div>
+      <div class="manual-two-column">
+        <div><h3>Runtime not found</h3><p>Run <code>build/build-wasm.sh</code> and copy the generated <code>kallisto.js</code>, <code>kallisto.wasm</code>, and any generated worker helper files into <code>kallisto/</code>.</p></div>
+        <div><h3>Threads do not work</h3><p>A pthread-enabled WebAssembly build requires cross-origin isolation. The included Apache <code>.htaccess</code> sets COOP and COEP headers.</p></div>
+        <div><h3>Out of memory</h3><p>Reduce concurrent applications, start with one thread, and test a smaller transcriptome. Kallisto index output is currently memory-backed. HISAT2 reference payloads at or above 1.5 GiB are blocked before execution.</p></div>
+        <div><h3>Stopped analysis</h3><p>The Stop button terminates the Web Worker. Partial outputs are discarded.</p></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

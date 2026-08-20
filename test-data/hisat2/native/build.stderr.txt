@@ -1,0 +1,113 @@
+Settings:
+  Output files: "/mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/hisat2/native/index/tiny.*.ht2"
+  Line rate: 7 (line is 128 bytes)
+  Lines per side: 1 (side is 128 bytes)
+  Offset rate: 4 (one in 16)
+  FTable chars: 10
+  Strings: unpacked
+  Local offset rate: 3 (one in 8)
+  Local fTable chars: 6
+  Local sequence length: 57344
+  Local sequence overlap between two consecutive indexes: 1024
+  Endianness: little
+  Actual local endianness: little
+  Sanity checking: disabled
+  Assertions: disabled
+  Random seed: 0
+  Sizeofs: void*:8, int:4, long:8, size_t:8
+Input files DNA, FASTA:
+  /mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/hisat2/inputs/genome.fa
+Reading reference sizes
+  Time reading reference sizes: 00:00:00
+Calculating joined length
+Writing header
+Reserving space for joined string
+Joining reference sequences
+  Time to join reference sequences: 00:00:00
+  Time to read SNPs and splice sites: 00:00:00
+Generation 0 (243 -> 243 nodes, 0 ranks)
+COUNTED NEW NODES: 0
+COUNTED TEMP NODES: 0
+RESIZED NODES: 0
+RESIZED NODES: 0
+MADE NEW NODES: 0
+Generation 1 (244 -> 244 nodes, 0 ranks)
+COUNTED NEW NODES: 0
+COUNTED TEMP NODES: 0
+RESIZED NODES: 0
+RESIZED NODES: 0
+MADE NEW NODES: 0
+Generation 2 (246 -> 246 nodes, 0 ranks)
+COUNTED NEW NODES: 0
+COUNTED TEMP NODES: 0
+RESIZED NODES: 0
+RESIZED NODES: 0
+MADE NEW NODES: 0
+Generation 3 (250 -> 250 nodes, 0 ranks)
+BUILT FROM_INDEX: 0
+COUNTED NEW NODES: 0
+COUNTED TEMP NODES: 0
+RESIZED NODES: 0
+RESIZED NODES: 0
+MADE NEW NODES: 0
+RESIZE NODES: 0
+SORT NODES: 0
+MERGE, UPDATE RANK: 0
+Generation 4 (258 -> 243 nodes, 243 ranks)
+Generating edges... 
+NODE.TO -> GENOME POS: 0
+BUILD FROM_INDEX 0
+COUNTED NEW EDGES: 0
+MADE NEW EDGES: 0
+SORTED NEW EDGES: 0
+RE-SORTED NODES: 0
+PROCESS EDGES: 0
+REMOVE Y: 0
+SORT, Make index: 0
+TOTAL: 0
+Allocating ftab, absorbFtab
+Entering GFM loop
+Exited GFM loop
+fchr[A]: 0
+fchr[C]: 56
+fchr[G]: 117
+fchr[T]: 170
+fchr[$]: 242
+Exiting GFM::buildToDisk()
+Returning from initFromVector
+Wrote 4194805 bytes to primary GFM file: /mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/hisat2/native/index/tiny.1.ht2
+Wrote 68 bytes to secondary GFM file: /mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/hisat2/native/index/tiny.2.ht2
+Re-opening _in1 and _in2 as input streams
+Returning from GFM constructor
+Returning from initFromVector
+Wrote 8561 bytes to primary GFM file: /mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/hisat2/native/index/tiny.5.ht2
+Wrote 66 bytes to secondary GFM file: /mnt/c/Users/0314k/Desktop/mapping_app/kallisto-web/test-data/hisat2/native/index/tiny.6.ht2
+Re-opening _in5 and _in5 as input streams
+Returning from HGFM constructor
+Headers:
+    len: 240
+    gbwtLen: 243
+    nodes: 242
+    sz: 120
+    gbwtSz: 122
+    lineRate: 7
+    offRate: 4
+    offMask: 0xfffffff0
+    ftabChars: 10
+    eftabLen: 0
+    eftabSz: 0
+    ftabLen: 1048577
+    ftabSz: 4194308
+    offsLen: 16
+    offsSz: 64
+    lineSz: 128
+    sideSz: 128
+    sideGbwtSz: 104
+    sideGbwtLen: 208
+    numSides: 2
+    numLines: 2
+    gbwtTotLen: 256
+    gbwtTotSz: 256
+    reverse: 0
+    linearFM: No
+Total time for call to driver() for forward index: 00:00:01
