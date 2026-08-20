@@ -7,6 +7,7 @@
   "app": { "windows": [{ "title": "RNA-seq Local" }], "security": { "capabilities": [] } },
   "bundle": {
     "active": false,
+    "icon": ["icons/icon.ico"],
     "externalBin": ["binaries/fastp", "binaries/hisat2", "binaries/hisat2-build", "binaries/featureCounts"],
     "resources": {
       "binaries/sidecars.windows-x86_64.json": "sidecars.windows-x86_64.json",
