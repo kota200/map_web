@@ -26,7 +26,7 @@ jobs:
           msystem: UCRT64
           update: true
           install: >-
-            git make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-zlib
+            git make unzip mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-zlib
             mingw-w64-ucrt-x86_64-isa-l mingw-w64-ucrt-x86_64-libdeflate
       - name: Fetch fixed upstream sources
         run: |
