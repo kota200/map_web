@@ -15,8 +15,7 @@
       "binaries/hisat2-align-s.exe": "hisat2-align-s.exe",
       "binaries/hisat2-align-l.exe": "hisat2-align-l.exe",
       "binaries/hisat2-build-s.exe": "hisat2-build-s.exe",
-      "binaries/hisat2-build-l.exe": "hisat2-build-l.exe",
-      "binaries/*.dll": ""
+      "binaries/hisat2-build-l.exe": "hisat2-build-l.exe"
     }
   }
 }
