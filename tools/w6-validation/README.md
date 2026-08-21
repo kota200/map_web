@@ -12,13 +12,31 @@ Set `W6_VERIFY_LARGE_HASHES=1` to re-hash the three user-supplied representative
 
 ## Browser gate
 
-Serve the app with `build/serve.py`, then open:
+Serve the app with either `build/serve.py` or the dependency-free Node server:
+
+```text
+node tools/w6-validation/serve.mjs --port 8000
+```
+
+Then open:
 
 ```text
 tools/w6-validation/tests/browser-gate.html
 ```
 
 The gate requires cross-origin isolation and OPFS. It verifies Kallisto fastp OFF/ON equivalence, fastp reports/retention/deletion, running-state cancellation cleanup, audited resource failures, hosted checksum failure, and annotation/index-contig mismatch. Run the archived Kallisto regression and W5 gate separately as part of the same release check.
+
+`.github/workflows/web-w6.yml` automates those three browser pages. Chromium and
+Firefox are required jobs. The WebKit job is diagnostic and may fail while
+Safari remains unmeasured: Playwright WebKit on Linux is not evidence from
+Apple Safari on macOS. Each job uploads a JSON report, server log, and a failure
+screenshot when applicable.
+
+For an environment with Playwright installed, the same harness can be run as:
+
+```text
+node tools/w6-validation/run-browser-gates.mjs --browser chromium
+```
 
 ## Representative data
 

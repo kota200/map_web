@@ -4,6 +4,10 @@ desktop/src-tauri/binaries/licenses/** text eol=lf
 desktop/src-tauri/binaries/sidecars.*.json text eol=lf
 desktop/corresponding-source/windows-x64/CORRESPONDING_SOURCE_SHA256SUMS text eol=lf
 
+# Catalog sizes and hashes are calculated over LF bytes. A Windows checkout
+# must serve the same annotation payload as Linux CI.
+test-data/hisat2/inputs/annotation.gtf text eol=lf
+
 desktop/src-tauri/binaries/*.exe binary
 desktop/src-tauri/icons/*.ico binary
 desktop/corresponding-source/windows-x64/*.tar.gz binary

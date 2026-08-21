@@ -38,7 +38,7 @@ export function estimateHisat2WebResources({ referenceBytes = 0, samples = [], r
     errors.push(`Estimated storage requirement ${requiredStorageBytes} bytes exceeds ${availableBytes} available bytes.`);
   }
   if (inputBytes >= WEB_RESOURCE_LIMITS.desktopInputRecommendationBytes || temporaryBytes >= WEB_RESOURCE_LIMITS.desktopInputRecommendationBytes) {
-    warnings.push('This dataset is beyond the measured small Web envelope; use the desktop workflow when it becomes available.');
+    warnings.push('This dataset is beyond the measured small Web envelope; use the verified desktop workflow for larger or long-running analysis.');
   }
   warnings.push('FASTQ expansion and SAM size are conservative heuristics, not measured percentages or a storage guarantee.');
   return {

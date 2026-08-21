@@ -1,0 +1,112 @@
+name: Web W6 release gate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/web-w6.yml'
+      - '.gitattributes'
+      - 'build/**'
+      - 'config/**'
+      - 'contracts/**'
+      - 'js/**'
+      - 'test-data/**'
+      - 'tools/w3-storage/**'
+      - 'tools/w4-catalog/**'
+      - 'tools/w5-pipeline/**'
+      - 'tools/w6-validation/**'
+  push:
+    branches:
+      - main
+      - phase-w6-release-gate
+    paths:
+      - '.github/workflows/web-w6.yml'
+      - '.gitattributes'
+      - 'build/**'
+      - 'config/**'
+      - 'contracts/**'
+      - 'js/**'
+      - 'test-data/**'
+      - 'tools/w3-storage/**'
+      - 'tools/w4-catalog/**'
+      - 'tools/w5-pipeline/**'
+      - 'tools/w6-validation/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-w6-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - name: Run dependency-free contracts
+        env:
+          W6_REQUIRE_REPRESENTATIVE_FILES: '0'
+        run: |
+          node build/check-static.mjs
+          node build/test-batch-results.mjs
+          node build/test-worker-lifecycle.mjs
+          node build/test-contracts.mjs
+          node build/test-product-shell.mjs
+          node tools/w3-storage/tests/static-contract.mjs
+          node tools/w4-catalog/tests/static-contract.mjs
+          node tools/w5-pipeline/tests/static-contract.mjs
+          node tools/w6-validation/tests/static-contract.mjs
+
+  browser-gates:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - browser: chromium
+            experimental: false
+          - browser: firefox
+            experimental: false
+          - browser: webkit
+            experimental: true
+    continue-on-error: ${{ matrix.experimental }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - name: Install pinned browser harness
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Start isolated local server
+        run: |
+          mkdir -p .w6-ci
+          node tools/w6-validation/serve.mjs --port 8000 > .w6-ci/server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat .w6-ci/server.log
+          exit 1
+      - name: Verify deployment headers
+        run: node build/check-headers.mjs http://127.0.0.1:8000/
+      - name: Run ${{ matrix.browser }} W6 browser gates
+        run: >-
+          node tools/w6-validation/run-browser-gates.mjs
+          --browser ${{ matrix.browser }}
+          --base-url http://127.0.0.1:8000/
+          --output-dir .w6-ci
+          --timeout-seconds 300
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-w6-${{ matrix.browser }}-evidence
+          path: .w6-ci/
+          if-no-files-found: error
