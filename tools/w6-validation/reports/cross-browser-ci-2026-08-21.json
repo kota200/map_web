@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "phase": "W6",
+  "status": "in_progress",
+  "observed_on": "2026-08-21",
+  "source": {
+    "workflow": "Web W6 release gate",
+    "run_id": 32458539850,
+    "url": "https://github.com/kota200/map_web/actions/runs/32458539850",
+    "head_sha": "0455b62fce3a15511b07e40a9c755e006a5944e9"
+  },
+  "static_contracts": "passed",
+  "browser_results": [
+    {
+      "browser": "chromium",
+      "version": "140.0.7339.16",
+      "runner": "ubuntu-latest x86_64",
+      "classification": "supported",
+      "opfs": true,
+      "cross_origin_isolated": true,
+      "gates": {
+        "kallisto_regression": "passed",
+        "w5_hisat2_pipeline": "passed",
+        "w6_release_gate": "passed"
+      }
+    },
+    {
+      "browser": "firefox",
+      "version": "141.0",
+      "runner": "ubuntu-latest x86_64",
+      "classification": "experimental",
+      "opfs": true,
+      "cross_origin_isolated": true,
+      "gates": {
+        "kallisto_regression": "passed",
+        "w5_hisat2_pipeline": "passed",
+        "w6_release_gate": "passed"
+      },
+      "boundary": "Small deterministic fixtures only; representative-scale behavior is unmeasured."
+    },
+    {
+      "browser": "playwright-webkit",
+      "version": "26.0",
+      "runner": "ubuntu-latest x86_64",
+      "classification": "unsupported-diagnostic",
+      "opfs": false,
+      "cross_origin_isolated": true,
+      "gates": {
+        "kallisto_regression": "failed-runtime-unavailable",
+        "w5_hisat2_pipeline": "failed-opfs-unavailable",
+        "w6_release_gate": "failed-opfs-unavailable"
+      },
+      "boundary": "Linux Playwright WebKit is not Apple Safari evidence. Real Safari remains unmeasured."
+    }
+  ],
+  "open_release_blockers": [
+    "approved production HISAT2 HTTPS catalog with provenance and licensing",
+    "representative HISAT2 Web memory, storage, runtime, eviction/recovery, and native scientific agreement",
+    "real Apple Safari measurement on macOS"
+  ]
+}

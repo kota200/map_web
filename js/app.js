@@ -1,6 +1,6 @@
 import { KallistoRunner } from './kallisto-client.js?v=20260821-w6-cross-browser';
 import { MatrixBuilder } from './batch-results.mjs';
-import { formatCapabilityBytes, inspectBrowserCapabilities } from './browser-capabilities.mjs?v=20260820-w6';
+import { formatCapabilityBytes, inspectBrowserCapabilities } from './browser-capabilities.mjs?v=20260821-w6-cross-browser';
 import { buildFastpArguments } from '../tools/fastp/runtime/fastp-runner.mjs';
 import { safeSampleId } from '../tools/w5-pipeline/runtime/preflight.mjs';
 import { KallistoFastpPreprocessor } from '../tools/w6-validation/runtime/kallisto-fastp.mjs';
@@ -9,7 +9,7 @@ const runner = new KallistoRunner();
 
 const $ = (id) => document.getElementById(id);
 const els = Object.fromEntries([
-  'progressStatus','localDataStatus','runtimeStatus','capabilityList','capabilityStorage','hisat2Availability','buildReferencePanel','existingReferencePanel','indexSection',
+  'progressStatus','localDataStatus','runtimeStatus','capabilityList','browserSupportStatus','capabilityStorage','hisat2Availability','buildReferencePanel','existingReferencePanel','indexSection',
   'transcriptomeFile','transcriptomeMeta','indexFile','indexMeta','kmerSize','indexThreads','makeUnique',
   'indexCommandPreview','buildIndexButton','downloadIndexButton','cancelIndexButton','indexProgress','indexProgressLabel','indexElapsed','indexLog',
   'sampleCards','addSampleButton',
@@ -876,6 +876,7 @@ async function initRuntime() {
   }));
 
   const { quota_bytes: quota, usage_bytes: usage, available_bytes: available } = capabilities.storage;
+  els.browserSupportStatus.textContent = capabilities.browser_support.message;
   els.capabilityStorage.textContent = Number.isFinite(available)
     ? `${formatCapabilityBytes(available)} available of ${formatCapabilityBytes(quota)} (${formatCapabilityBytes(usage)} used)`
     : 'Quota estimate unavailable; storage must be checked again before hosted index download.';

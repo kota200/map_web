@@ -58,9 +58,9 @@
           <p><a href="./hisat2-workflow.html">Open the experimental workflow</a></p>
         </article>
         <article>
-          <span class="release-badge release-planned">Planned after Web gate</span>
+          <span class="release-badge release-experimental">D1/D2 engineering accepted</span>
           <h3>Desktop app</h3>
-          <p>The planned native desktop workflow is for custom index construction, large references, and long-running jobs. No installer has been built or validated yet.</p>
+          <p>The native desktop workflow supports custom index construction, large references, and long-running jobs. CI produced verified unsigned installers; public distribution still requires platform signing, macOS notarization, and release approval.</p>
         </article>
       </div>
     </section>
@@ -68,7 +68,7 @@
     <section id="requirements" class="step-card">
       <div class="step-head"><h2>Requirements</h2></div>
       <ul class="manual-list">
-        <li><strong>Modern browser:</strong> Chrome 151 on Windows x64 is the only browser measured through W6 so far. Firefox and Safari are not supported claims for this release gate.</li>
+        <li><strong>Modern browser:</strong> Chromium is the supported family. Firefox 141 passed the small W6 CI gates and is Experimental because representative scale is unmeasured. Safari is Unsupported for this gate: real Safari is unmeasured, while the Linux WebKit 26 diagnostic lacked OPFS and the packaged Kallisto runtime.</li>
         <li><strong>WebAssembly runtime:</strong> <code>kallisto/kallisto.js</code> and <code>kallisto/kallisto.wasm</code> must be deployed with the app.</li>
         <li><strong>Memory:</strong> index construction can require substantial RAM. The browser and operating system must have enough free memory for the selected transcriptome and generated index.</li>
         <li><strong>HTTP/HTTPS:</strong> serve the app from a web server; do not open <code>index.html</code> directly with <code>file://</code>.</li>

@@ -5,6 +5,40 @@ function finiteOrNull(value) {
   return Number.isFinite(number) && number >= 0 ? number : null;
 }
 
+export function classifyBrowserValidation(userAgent = '') {
+  const value = String(userAgent);
+  if (/Firefox\//i.test(value)) {
+    return {
+      family: 'firefox',
+      classification: 'experimental',
+      measured: true,
+      message: 'Experimental: Firefox 141 on Linux passed the small W6 CI gates; representative-scale behavior is unmeasured.',
+    };
+  }
+  if (/(?:Chrome|Chromium|HeadlessChrome|Edg)\//i.test(value) && !/(?:OPR|SamsungBrowser)\//i.test(value)) {
+    return {
+      family: 'chromium',
+      classification: 'supported',
+      measured: true,
+      message: 'Supported browser family: Chromium passed W6 CI and Chrome 151 completed the representative Kallisto measurement.',
+    };
+  }
+  if (/Safari\//i.test(value) && !/(?:Chrome|Chromium|CriOS|Edg|OPR)\//i.test(value)) {
+    return {
+      family: 'safari',
+      classification: 'unsupported',
+      measured: false,
+      message: 'Unsupported for this gate: Apple Safari is unmeasured; Linux WebKit diagnostics lacked required OPFS/runtime support.',
+    };
+  }
+  return {
+    family: 'unknown',
+    classification: 'unsupported',
+    measured: false,
+    message: 'Unsupported browser family: use a measured Chromium browser or experimental Firefox.',
+  };
+}
+
 export function formatCapabilityBytes(bytes) {
   if (!Number.isFinite(bytes)) return 'unavailable';
   const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
@@ -22,6 +56,7 @@ export async function inspectBrowserCapabilities(
   { kallistoRuntimeReady = false, hisat2EngineAvailable = false } = {},
 ) {
   const nav = env.navigator || {};
+  const browserSupport = classifyBrowserValidation(nav.userAgent || '');
   const storage = nav.storage || {};
   let estimate = {};
   let estimateError = null;
@@ -51,6 +86,10 @@ export async function inspectBrowserCapabilities(
   if (!kallistoRuntimeReady) kallistoMissing.push('kallisto Memory64 runtime compile');
   const hisat2Missing = missingFor('hisat2');
   if (!hisat2EngineAvailable) hisat2Missing.push('validated HISAT2/featureCounts Wasm engines');
+  if (browserSupport.classification === 'unsupported') {
+    kallistoMissing.push('measured browser support');
+    hisat2Missing.push('measured browser support');
+  }
 
   const quotaBytes = finiteOrNull(estimate.quota);
   const usageBytes = finiteOrNull(estimate.usage);
@@ -60,6 +99,7 @@ export async function inspectBrowserCapabilities(
     schema_version: 1,
     checked_at: new Date().toISOString(),
     user_agent: typeof nav.userAgent === 'string' ? nav.userAgent : 'unavailable',
+    browser_support: browserSupport,
     hardware_concurrency: Number.isInteger(nav.hardwareConcurrency) ? nav.hardwareConcurrency : 'unavailable',
     checks,
     storage: {

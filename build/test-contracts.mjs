@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { inspectBrowserCapabilities, formatCapabilityBytes } from '../js/browser-capabilities.mjs';
+import { classifyBrowserValidation, inspectBrowserCapabilities, formatCapabilityBytes } from '../js/browser-capabilities.mjs';
 
 const schemaPaths = [
   'contracts/sample.schema.json',
@@ -24,7 +24,7 @@ const readyEnv = {
   crossOriginIsolated: true,
   crypto: { subtle: { digest() {} } },
   navigator: {
-    userAgent: 'test-browser',
+    userAgent: 'Mozilla/5.0 Chrome/140.0.0.0 Safari/537.36',
     hardwareConcurrency: 8,
     storage: {
       async estimate() { return { quota: 4 * 1024 ** 3, usage: 1024 ** 3 }; },
@@ -38,6 +38,7 @@ const ready = await inspectBrowserCapabilities(readyEnv, {
   hisat2EngineAvailable: false,
 });
 assert.equal(ready.workflows.kallisto.supported, true);
+assert.equal(ready.browser_support.classification, 'supported');
 assert.equal(ready.workflows.hisat2_browser.supported, false);
 assert.match(ready.workflows.hisat2_browser.missing.join(' '), /validated HISAT2/);
 assert.equal(ready.storage.available_bytes, 3 * 1024 ** 3);
@@ -46,5 +47,7 @@ const unsupported = await inspectBrowserCapabilities({ navigator: {} });
 assert.equal(unsupported.workflows.kallisto.supported, false);
 assert.equal(unsupported.workflows.hisat2_browser.supported, false);
 assert.equal(formatCapabilityBytes(1024 ** 3), '1.0 GiB');
+assert.equal(classifyBrowserValidation('Mozilla/5.0 Firefox/141.0').classification, 'experimental');
+assert.equal(classifyBrowserValidation('Mozilla/5.0 Version/26.0 Safari/605.1.15').classification, 'unsupported');
 
 console.log('Contract and browser capability tests passed.');

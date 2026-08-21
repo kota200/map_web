@@ -32,6 +32,13 @@ Safari remains unmeasured: Playwright WebKit on Linux is not evidence from
 Apple Safari on macOS. Each job uploads a JSON report, server log, and a failure
 screenshot when applicable.
 
+The accepted cross-browser automation evidence is Actions run
+[`32458539850`](https://github.com/kota200/map_web/actions/runs/32458539850)
+at commit `0455b62fce3a15511b07e40a9c755e006a5944e9`. Chromium 140 and
+Firefox 141 passed all three gates. The permitted WebKit 26 diagnostic failure
+recorded missing OPFS and an unavailable packaged Kallisto runtime. The durable
+classification summary is `reports/cross-browser-ci-2026-08-21.json`.
+
 For an environment with Playwright installed, the same harness can be run as:
 
 ```text

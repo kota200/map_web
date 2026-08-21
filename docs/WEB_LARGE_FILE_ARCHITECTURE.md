@@ -79,7 +79,7 @@ Still not tested:
 
 - GRCh38/GRCm39 or another multi-GiB production index.
 - Multi-GiB FASTQ, cleaned FASTQ, or SAM peak memory and runtime.
-- Firefox and Safari behavior, storage eviction, private-browsing quotas, low-disk operating-system failures, or multi-tab write contention.
+- Firefox representative/64 MiB storage behavior, real Safari behavior, storage eviction, private-browsing quotas, low-disk operating-system failures, or multi-tab write contention. Firefox 141 has passed only the later W6 small-fixture gates.
 - Cross-origin CDN headers and retry/range-download behavior.
 - Cryptographic per-file verification and multi-file atomic catalog transactions; these are Phase W4.
 

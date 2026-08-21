@@ -43,7 +43,8 @@ const required = [
   'tools/w6-validation/README.md','tools/w6-validation/example-data.lock.json','tools/w6-validation/profile_example_data.py',
   'tools/w6-validation/runtime/kallisto-fastp.mjs','tools/w6-validation/runtime/resource-policy.mjs',
   'tools/w6-validation/tests/static-contract.mjs','tools/w6-validation/tests/browser-gate.html','tools/w6-validation/tests/browser-gate.mjs',
-  'tools/w6-validation/reports/chromium-151-2026-08-18.json','tools/w6-validation/reports/chromium-151-memory-2026-08-20.json'
+  'tools/w6-validation/reports/chromium-151-2026-08-18.json','tools/w6-validation/reports/chromium-151-memory-2026-08-20.json',
+  'tools/w6-validation/reports/cross-browser-ci-2026-08-21.json'
 ];
 for (const path of required) {
   if (!fs.existsSync(new URL(`../${path}`, import.meta.url))) throw new Error(`Missing ${path}`);

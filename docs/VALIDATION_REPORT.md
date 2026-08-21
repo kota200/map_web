@@ -124,7 +124,7 @@ The page wrote a committed 64 MiB entry and an intentional 1 MiB incomplete entr
 
 The actual W2 engines also passed through this boundary: fastp wrote a 70-byte cleaned gzip directly to OPFS; eight tiny index parts were fetched into OPFS and reopened by HISAT2; HISAT2 wrote a 556-byte SAM directly to OPFS without returning it in the result message; a separate featureCounts Worker reopened the SAM and produced `g1`, Length 160, raw count 2. These tiny outputs validate plumbing and native-equivalent semantics, not large-data performance.
 
-The W3 gate passes for the architecture choice. Multi-GiB biological inputs, production catalog checksums, CDN headers, storage eviction, Firefox, and Safari remain untested.
+The W3 gate passes for the architecture choice. Multi-GiB biological inputs, production catalog checksums, CDN headers, storage eviction, Firefox at the W3/representative scale, and real Safari remain untested. Firefox 141 later passed the W6 small-fixture gates described below.
 
 ## Phase W4 hosted HISAT2 index catalog gate
 
@@ -179,6 +179,8 @@ This is a small synthetic acceptance, not a production-scale claim. A production
 
 The fresh cross-origin-isolated Chrome 151 run on Windows x64 passed the archived Kallisto regression, the complete W5 HISAT2 fixture gate, and the new W6 gate. Kallisto fastp defaults OFF. The small paired fixture produced the exact archived abundance and run counters with fastp OFF and ON; fastp reported four reads before/after, exposed its exact arguments and reports, retained two cleaned mates, and deleted both on request. Cancelling fastp after its running event rejected with `AbortError` and left zero `w6-kallisto-*` OPFS entries.
 
+Actions run [`32458539850`](https://github.com/kota200/map_web/actions/runs/32458539850) at commit `0455b62fce3a15511b07e40a9c755e006a5944e9` made the small-fixture gate reproducible outside the original validation host. The dependency-free contracts and all three browser pages passed in Chromium 140.0.7339.16 and Firefox 141.0 on Linux x64. Firefox exposed a real cross-browser defect: its Worker `Error.stack` omitted the human-readable message. The Worker now serializes name, message, and stack without duplication, so the paired-read mismatch remains understandable and the Firefox regression passes. Playwright WebKit 26 was retained as a permitted diagnostic failure: it exposed cross-origin isolation but no OPFS, and the packaged Kallisto Memory64 runtime was unavailable. Linux Playwright WebKit is not Apple Safari evidence.
+
 The same gate returned distinct, understandable failures for insufficient storage (`QuotaPreflightError`), a reference at the conservative 1.5 GiB Web envelope (`WebResourceLimitError`), an incorrect hosted index checksum (`IntegrityError: SHA-256 mismatch`), and an annotation/index contig mismatch (`IntegrityError: Declared annotation contig ... was not found`). On the final 2026-08-20 rerun, browser storage was 696 bytes before and after the small W6 gate. The main-page JS heap observation changed from 13,489,389 to 14,793,032 bytes; this is a tiny-gate observation, distinct from the 268,435,456-byte Wasm allocation reported by each small Kallisto run.
 
 The user-supplied representative Kallisto inputs were read directly from `example_data` and locked by size/SHA-256 in `tools/w6-validation/example-data.lock.json`:
@@ -200,7 +202,7 @@ The tracked instantiation hook captures the shared imported `WebAssembly.Memory`
 
 This proves that this particular multi-GiB Kallisto dataset completes in the tested browser and closes the previously open representative Kallisto Wasm-allocation measurement sub-gate. It does not create a general multi-GiB support promise. The generated index and standard Kallisto outputs remain memory-backed. The earlier 2026-08-18 index was 141,752,090 bytes, 768 bytes larger than the fresh build, while both reported 209,567 graph contigs and 47,602,966 k-mers; byte-for-byte determinism is therefore not claimed for this representative index build.
 
-The example dataset includes `Col-CC_v2_genome.fasta.gz` and `TAIR12_1Feb26.gff3.gz`; both declare the matching `Chr1`–`Chr5` contigs. It still has no exact-version prebuilt HISAT2 index, native expected alignment/featureCounts/TPM output, or approved production catalog/CDN. It therefore cannot yet validate representative HISAT2 biology or hosting. Firefox and Safari also remain unmeasured. W6 is not complete. Desktop D1/D2 proceeded as separately accepted native engineering work; this does not close the Web W6 release gate.
+The example dataset includes `Col-CC_v2_genome.fasta.gz` and `TAIR12_1Feb26.gff3.gz`; both declare the matching `Chr1`–`Chr5` contigs. The retained `representative-hisat2/` evidence now includes the pinned HISAT2 2.2.3 native alignment summary, featureCounts 2.1.1 raw counts/Length/summary, TPM, checksums, and build manifest. Its generated eight-part index is reproducible but not committed as a production download. There is still no approved immutable HTTPS catalog/CDN, representative browser run, browser resource/eviction measurement, or Web-to-native scientific comparison for this dataset. Firefox is measured only at the small-fixture boundary; real Safari remains unmeasured. W6 is not complete. Desktop D1/D2 proceeded as separately accepted native engineering work; this does not close the Web W6 release gate.
 
 ## Memory, storage, and runtime
 
@@ -224,9 +226,9 @@ The example dataset includes `Col-CC_v2_genome.fasta.gz` and `TAIR12_1Feb26.gff3
 
 ## Platform support claims
 
-- Chromium: tiny Kallisto path, isolated fastp/HISAT2/featureCounts proofs, the W3 64 MiB OPFS/file-backed handoff, W4 local catalog/cache, and W5 experimental end-to-end synthetic workflow tested in Chrome 151.
-- Firefox: not tested; Firefox was not installed in the Windows validation environment on 2026-08-20.
-- Safari: not tested; Safari requires a separate macOS validation environment and is unavailable on the current Windows host.
+- Chromium: Supported browser family. Chrome 151 passed the representative Kallisto measurement; Chromium 140 passed the archived Kallisto, W5 synthetic HISAT2, and W6 small-fixture gates in run `32458539850`.
+- Firefox: Experimental. Firefox 141 on Linux x64 passed the same three automated small-fixture gates in run `32458539850`; representative-scale behavior is unmeasured.
+- Safari: Unsupported for this gate and not measured on macOS. Playwright WebKit 26 on Linux is diagnostic only; it lacked OPFS and the packaged Kallisto runtime and cannot be treated as Safari evidence.
 - Desktop D2 engineering targets: Windows x64, Linux x64, macOS arm64, and
   macOS x64 native Kallisto sidecars and unsigned installers passed clean CI.
   This is not a signed/notarized public-support claim.
@@ -260,4 +262,4 @@ The example dataset includes `Col-CC_v2_genome.fasta.gz` and `TAIR12_1Feb26.gff3
 
 ## W2–W6 scope statement
 
-All three W2 individual-engine acceptances, the measured W3 storage-architecture gate, W4 local hosted-package/cache acceptance, W5 small end-to-end pipeline, and the completed W6 sub-gates above have passed. The product UI keeps fastp OFF by default and enables HISAT2 only as Experimental with a synthetic local catalog warning. One representative multi-GiB Kallisto run completed with measured Wasm linear-memory allocation high water. Production HISAT2 hosting/biology, Firefox, and Safari remain Web release blockers. Phase W6 Web release validation is in progress. Desktop D1/D2 engineering acceptance exists, but no signed or publicly approved desktop release exists.
+All three W2 individual-engine acceptances, the measured W3 storage-architecture gate, W4 local hosted-package/cache acceptance, W5 small end-to-end pipeline, and the completed W6 sub-gates above have passed. The product UI keeps fastp OFF by default and enables HISAT2 only as Experimental with a synthetic local catalog warning. One representative multi-GiB Kallisto run completed with measured Wasm linear-memory allocation high water. Chromium is Supported and Firefox is Experimental at the measured boundaries; Safari is Unsupported and unmeasured. Production HISAT2 hosting/biology, representative HISAT2 Web resource/scientific agreement, storage eviction/recovery, and real Safari remain Web release blockers. Phase W6 Web release validation is in progress. Desktop D1/D2 engineering acceptance exists, but no signed or publicly approved desktop release exists.

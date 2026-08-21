@@ -118,7 +118,7 @@ http://127.0.0.1:8000/tools/w6-validation/tests/browser-gate.html
 
 The W6 page requires exact Kallisto fastp OFF/ON results, fastp reports and QC, explicit retained-output deletion, running-state cancellation with zero residual OPFS entries, storage/Wasm-envelope preflight errors, hosted checksum failure, and annotation/index-contig mismatch. The product UI must keep Kallisto fastp OFF initially and expose the same reports and delete action.
 
-The representative Chrome measurement uses the files locked in `tools/w6-validation/example-data.lock.json`; it must be recorded separately from synthetic acceptance. The tracked runtime reports final shared Wasm linear-memory byteLength as a high-water allocation because Wasm memory does not shrink; it does not report OS resident memory. Do not mark W6 complete while production HISAT2 biology/hosting, Firefox, or Safari remain unmeasured.
+The representative Chrome measurement uses the files locked in `tools/w6-validation/example-data.lock.json`; it must be recorded separately from synthetic acceptance. The tracked runtime reports final shared Wasm linear-memory byteLength as a high-water allocation because Wasm memory does not shrink; it does not report OS resident memory. Actions run `32458539850` passed the small gates in Chromium and Firefox; Firefox remains Experimental at this boundary. Do not mark W6 complete while production HISAT2 hosting/biology, representative HISAT2 Web resource/scientific agreement, eviction/recovery, or real Safari remain unmeasured.
 
 ## HISAT2 2.2.3 W2 proof
 

@@ -14,7 +14,7 @@ The supplied archive also contained a patched kallisto checkout at upstream comm
 index.html (unchanged public entry point)
   ├─ Kallisto in browser — stable/recommended and fully interactive
   ├─ HISAT2 + featureCounts in browser — experimental W5 form, synthetic catalog only
-  └─ Desktop app — planned, visibly unreleased
+  └─ Desktop app — D1/D2 engineering accepted; unsigned and visibly unreleased
 ```
 
 W1 adds product navigation and capability reporting without moving the entry point, replacing the framework, or simulating unimplemented engines.
