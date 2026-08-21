@@ -45,10 +45,6 @@ sed -i \
   -e 's/free(new_t_bmp);/posix_memalign_free(new_t_bmp);/g' \
   "$tiny_bitmap"
 
-find "$source_dir" -type f \
-  \( -name '*.cpp' -o -name '*.c' -o -name '*.h' -o -name '*.hpp' -o -name '*.tcc' \) \
-  -exec sed -i 's/\bbyte\b/std::byte/g' {} +
-
 sed -i 's/libz\.lib/libz.a/g' "$source_dir/src/CMakeLists.txt"
 git -C "$source_dir" diff --check
 git -C "$source_dir" diff --binary > "$source_dir/kallisto-windows-x64.patch"

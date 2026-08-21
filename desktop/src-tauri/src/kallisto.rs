@@ -64,7 +64,11 @@ pub fn plan_kallisto(request: &KallistoRequest) -> Result<KallistoRunPlan, Deskt
     }
 
     let single_end = request.sample.r2.is_none();
-    match (single_end, request.fragment_length, request.fragment_length_sd) {
+    match (
+        single_end,
+        request.fragment_length,
+        request.fragment_length_sd,
+    ) {
         (true, Some(length), Some(sd))
             if length.is_finite() && length > 0.0 && sd.is_finite() && sd > 0.0 => {}
         (true, _, _) => return Err(DesktopError::InvalidReads),
@@ -80,7 +84,11 @@ pub fn plan_kallisto(request: &KallistoRequest) -> Result<KallistoRunPlan, Deskt
     let final_output_dir = request.output_dir.join(run_id.to_string());
     let mut commands = Vec::new();
     let input1 = request.sample.r1.display().to_string();
-    let input2 = request.sample.r2.as_ref().map(|path| path.display().to_string());
+    let input2 = request
+        .sample
+        .r2
+        .as_ref()
+        .map(|path| path.display().to_string());
     let (quant_r1, quant_r2) = if request.run_fastp {
         let cleaned_r1 = temporary_dir.join("cleaned-R1.fastq.gz");
         let cleaned_r2 = request
@@ -187,9 +195,7 @@ pub fn finalize_kallisto_run(
         .get("n_processed")
         .and_then(Value::as_u64)
         .ok_or_else(|| {
-            DesktopError::Process(
-                "kallisto run_info.json has no valid n_processed value".into(),
-            )
+            DesktopError::Process("kallisto run_info.json has no valid n_processed value".into())
         })?;
     let n_pseudoaligned = run_info
         .get("n_pseudoaligned")
@@ -308,7 +314,9 @@ pub fn finalize_kallisto_run(
     )
     .map_err(|error| DesktopError::Process(format!("could not write run manifest: {error}")))?;
     fs::rename(&plan.temporary_dir, &plan.final_output_dir).map_err(|error| {
-        DesktopError::Process(format!("could not atomically publish kallisto results: {error}"))
+        DesktopError::Process(format!(
+            "could not atomically publish kallisto results: {error}"
+        ))
     })?;
     Ok(())
 }
@@ -424,7 +432,10 @@ mod tests {
         assert_eq!(quant.args[0], "quant");
         assert!(!quant.args.contains(&"--single".into()));
         assert!(!quant.args.iter().any(|argument| argument == "--dta"));
-        assert!(quant.args.iter().any(|argument| argument.ends_with("reads 2.fq.gz")));
+        assert!(quant
+            .args
+            .iter()
+            .any(|argument| argument.ends_with("reads 2.fq.gz")));
     }
 
     #[test]
@@ -436,7 +447,12 @@ mod tests {
             Err(DesktopError::InvalidReads)
         ));
         let plan = plan_kallisto(&request(false)).unwrap();
-        assert!(plan.commands.last().unwrap().args.contains(&"--single".into()));
+        assert!(plan
+            .commands
+            .last()
+            .unwrap()
+            .args
+            .contains(&"--single".into()));
     }
 
     #[test]

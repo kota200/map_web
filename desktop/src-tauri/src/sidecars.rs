@@ -277,53 +277,53 @@ pub fn verify_bundled_sidecar_versions(
         .iter()
         .map(|record| record.tool.clone())
         .map(|tool| {
-        let record = manifest
-            .sidecars
-            .iter()
-            .find(|record| record.tool == tool)
-            .ok_or_else(|| DesktopError::UnsupportedTool(tool_name(&tool).into()))?;
-        let program = verify_sidecar(root, manifest, &tool)?;
-        let version_arguments: &[&str] = match tool {
-            Tool::FeatureCounts => &["-v"],
-            Tool::Kallisto => &["version"],
-            _ => &["--version"],
-        };
-        let output = Command::new(program)
-            .args(version_arguments)
-            .stdin(Stdio::null())
-            .output()
-            .map_err(|error| {
-                DesktopError::Process(format!(
-                    "could not launch bundled {} for version verification: {error}",
-                    tool_name(&tool)
-                ))
-            })?;
-        let combined = format!(
-            "{}{}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-        if !output.status.success() {
-            return Err(DesktopError::Process(format!(
-                "bundled {} version command exited unsuccessfully: {}",
-                tool_name(&tool),
-                combined.trim()
-            )));
-        }
-        if !combined.contains(&record.version) {
-            return Err(DesktopError::Process(format!(
-                "bundled {} version output did not contain registered version {}",
-                tool_name(&tool),
-                record.version
-            )));
-        }
-        Ok(SidecarVersionEvidence {
-            tool,
-            version: record.version.clone(),
-            output: combined.trim().to_owned(),
+            let record = manifest
+                .sidecars
+                .iter()
+                .find(|record| record.tool == tool)
+                .ok_or_else(|| DesktopError::UnsupportedTool(tool_name(&tool).into()))?;
+            let program = verify_sidecar(root, manifest, &tool)?;
+            let version_arguments: &[&str] = match tool {
+                Tool::FeatureCounts => &["-v"],
+                Tool::Kallisto => &["version"],
+                _ => &["--version"],
+            };
+            let output = Command::new(program)
+                .args(version_arguments)
+                .stdin(Stdio::null())
+                .output()
+                .map_err(|error| {
+                    DesktopError::Process(format!(
+                        "could not launch bundled {} for version verification: {error}",
+                        tool_name(&tool)
+                    ))
+                })?;
+            let combined = format!(
+                "{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            if !output.status.success() {
+                return Err(DesktopError::Process(format!(
+                    "bundled {} version command exited unsuccessfully: {}",
+                    tool_name(&tool),
+                    combined.trim()
+                )));
+            }
+            if !combined.contains(&record.version) {
+                return Err(DesktopError::Process(format!(
+                    "bundled {} version output did not contain registered version {}",
+                    tool_name(&tool),
+                    record.version
+                )));
+            }
+            Ok(SidecarVersionEvidence {
+                tool,
+                version: record.version.clone(),
+                output: combined.trim().to_owned(),
+            })
         })
-    })
-    .collect()
+        .collect()
 }
 
 impl ProcessSupervisor {
@@ -960,9 +960,7 @@ fn cleanup_partial(plan: &crate::RunPlan) -> Result<(), DesktopError> {
     Ok(())
 }
 
-fn cleanup_kallisto_partial(
-    plan: &crate::kallisto::KallistoRunPlan,
-) -> Result<(), DesktopError> {
+fn cleanup_kallisto_partial(plan: &crate::kallisto::KallistoRunPlan) -> Result<(), DesktopError> {
     if plan.temporary_dir.exists() {
         fs::remove_dir_all(&plan.temporary_dir).map_err(|error| {
             DesktopError::Process(format!("could not clean partial kallisto files: {error}"))
@@ -1046,10 +1044,8 @@ mod tests {
 
     #[test]
     fn rejects_tampered_static_component_license() {
-        let root = std::env::temp_dir().join(format!(
-            "rna-seq-sidecar-license-test-{}",
-            Uuid::new_v4()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("rna-seq-sidecar-license-test-{}", Uuid::new_v4()));
         fs::create_dir_all(root.join("licenses")).unwrap();
         fs::write(root.join("fastp"), b"binary").unwrap();
         fs::write(root.join("licenses/tool.txt"), b"tool license").unwrap();

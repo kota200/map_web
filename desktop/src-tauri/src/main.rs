@@ -171,8 +171,8 @@ fn cleanup_orphan_temporary_directories(
 fn main() {
     if std::env::args_os().any(|argument| argument == "--verify-bundled-sidecars") {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("binaries");
-        let state = load_state(root.clone(), root.join(sidecar_manifest_name()))
-            .unwrap_or_else(|error| {
+        let state =
+            load_state(root.clone(), root.join(sidecar_manifest_name())).unwrap_or_else(|error| {
                 eprintln!("{error}");
                 std::process::exit(1);
             });
