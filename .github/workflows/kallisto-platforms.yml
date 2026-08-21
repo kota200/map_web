@@ -121,14 +121,19 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Rust formatting check failed with $LASTEXITCODE" }
           cargo test --manifest-path desktop/src-tauri/Cargo.toml
           if ($LASTEXITCODE -ne 0) { throw "Cross-platform Rust core tests failed with $LASTEXITCODE" }
-          cargo test --manifest-path desktop/src-tauri/Cargo.toml --features desktop --test bundled_sidecars -- --nocapture
-          if ($LASTEXITCODE -ne 0) { throw "Tauri Kallisto sidecar launch failed with $LASTEXITCODE" }
           cargo install tauri-cli --version 2.11.4 --locked
           if ($LASTEXITCODE -ne 0) { throw "tauri-cli installation failed with $LASTEXITCODE" }
           Push-Location desktop/src-tauri
           try {
             cargo tauri icon icons/app-icon.svg
             if ($LASTEXITCODE -ne 0) { throw "Tauri icon generation failed with $LASTEXITCODE" }
+          } finally {
+            Pop-Location
+          }
+          cargo test --manifest-path desktop/src-tauri/Cargo.toml --features desktop --test bundled_sidecars -- --nocapture
+          if ($LASTEXITCODE -ne 0) { throw "Tauri Kallisto sidecar launch failed with $LASTEXITCODE" }
+          Push-Location desktop/src-tauri
+          try {
             if ('${{ runner.os }}' -eq 'Linux') {
               cargo tauri build --config tauri.kallisto-only.conf.json --bundles deb,appimage
             } else {
