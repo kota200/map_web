@@ -1,10 +1,11 @@
-# Desktop Pipeline (D1)
+# Desktop Pipeline (D1 complete; D2 in progress)
 
-Status: complete on Windows x64. GitHub Actions run
-[`32385204268`](https://github.com/kota200/map_web/actions/runs/32385204268)
-is the acceptance record for commit `0a5e40b`: verified production sidecars,
-real Tauri application launches, Rust tests, and the complete `desktop` feature
-build all passed.
+Status: D1 is complete on Windows x64. The merged `main` acceptance record is
+GitHub Actions run
+[`32437427175`, attempt 2](https://github.com/kota200/map_web/actions/runs/32437427175):
+verified production sidecars, real Tauri application launches, Rust tests, and
+the complete `desktop` feature build passed. Attempt 1 failed only because a
+SourceForge mirror timed out; D2 adds bounded retry for those fixed downloads.
 
 ```text
 shared UI / schemas / scientific calculations
@@ -49,7 +50,7 @@ sizes/SHA-256, UTC timestamps, and the validation result.
 
 ## Sidecar release gate
 
-`src-tauri/binaries/sidecars.windows-x86_64.json` is fail-closed. A production
+`src-tauri/binaries/sidecars.x86_64-pc-windows-msvc.json` is fail-closed. A production
 record names the Tauri target-specific executable and records version, SHA-256,
 source URL/revision, build provenance, license identifier, license path/hash,
 and every support helper.
@@ -102,3 +103,72 @@ that the package contains zero `.dll` files.
   provenance records; static dependency notices are included.
 - The compiled Tauri application launches every bundled sidecar in CI.
 - Rust core tests and the full `desktop` feature build pass.
+
+## D2 native Kallisto boundary
+
+`plan_kallisto_run` accepts a typed transcriptome-index request and builds only
+`fastp` and `kallisto quant` argument arrays. Paired-end mode rejects fragment
+distribution fields; single-end mode requires positive finite mean and standard
+deviation values. Kallisto never receives HISAT2, SAM, annotation, strandedness,
+or featureCounts settings.
+
+The supervisor verifies every requested sidecar before creating the UUID staging
+directory, streams capped/redacted logs, tracks the child process for cancellation,
+and validates the exact Kallisto table header, numeric values, unique target IDs,
+and required `run_info.json` fields. It removes temporary cleaned FASTQ files,
+writes `desktop-run-manifest.json` without absolute input paths, and atomically
+renames the complete result directory. Expected published outputs are
+`abundance.tsv`, `run_info.json`, optional plaintext bootstrap TSV files, and the
+desktop manifest.
+
+The desktop chooser states the scientific boundary explicitly:
+
+- Kallisto is transcript-level pseudoalignment/abundance against a transcriptome
+  index.
+- HISAT2 + featureCounts is genome alignment followed by annotation-aware
+  gene/feature counting.
+
+The UI calls `verify_sidecars` at startup and disables engines not fully present
+in the target manifest. A target-specific manifest must match the Rust compile
+target exactly; a copied manifest from another platform is rejected.
+
+## D2 platform artifacts and release status
+
+The Windows workflow builds Kallisto 0.52.0 from commit `4e9f29c` using the
+checked-in transformation derived from upstream's own Windows recipe. It records
+the exact patch, unmodified source archive, binary hash, Kallisto/Bifrost/zlib-ng
+licenses, native version evidence, scientific fixture result, and an unsigned
+NSIS installer checksum.
+
+`kallisto-platforms.yml` independently builds portable native Kallisto on:
+
+| Target | Runner | Tool gate | Unsigned bundle requested |
+|---|---|---|---|
+| `x86_64-unknown-linux-gnu` | Ubuntu 22.04 x64 | version, architecture, index + PE quant, exact abundance | `.deb` and AppImage |
+| `aarch64-apple-darwin` | macOS 15 arm64 | version, architecture, index + PE quant, exact abundance | DMG |
+| `x86_64-apple-darwin` | macOS 15 Intel | version, architecture, index + PE quant, exact abundance | DMG |
+| `x86_64-pc-windows-msvc` | Windows Server 2022 x64 | version, SHA, Tauri launch; native regression is a D2 gate | NSIS |
+
+These are CI test artifacts, not public releases. D2 is not complete until all
+four jobs have actually passed and their generated hashes are reviewed. A public
+macOS download requires Developer ID signing and notarization; a public Windows
+installer requires an approved Authenticode signing identity and protected CI
+secret/key service; Linux publishes separate `.deb` and AppImage formats and
+needs its own signature/repository policy. No signing credentials are committed.
+
+Current packaging guidance is based on the official Tauri documentation:
+<https://v2.tauri.app/distribute/> and
+<https://v2.tauri.app/start/prerequisites/>.
+
+## D2 acceptance checklist
+
+- [ ] Windows x64 native Kallisto build, scientific regression, Tauri launch,
+  and unsigned NSIS generation pass in clean CI.
+- [ ] macOS arm64 native Kallisto regression and unsigned DMG generation pass.
+- [ ] macOS x64 native Kallisto regression and unsigned DMG generation pass.
+- [ ] Linux x64 native Kallisto regression plus `.deb` and AppImage generation
+  pass on the documented compatibility baseline.
+- [ ] Every artifact has a target-specific manifest, exact SHA-256, source
+  revision/archive, full license texts, and build provenance.
+- [ ] Signing/notarization remains visibly blocked until real credentials and a
+  release owner are approved; unsigned CI artifacts are never called releasable.

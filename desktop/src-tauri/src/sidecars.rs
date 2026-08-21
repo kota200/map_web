@@ -32,6 +32,8 @@ pub struct SidecarRecord {
     pub license_sha256: String,
     #[serde(default)]
     pub support_files: Vec<SidecarSupportFile>,
+    #[serde(default)]
+    pub bundled_components: Vec<SidecarComponent>,
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SidecarSupportFile {
@@ -39,9 +41,29 @@ pub struct SidecarSupportFile {
     pub sha256: String,
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SidecarComponent {
+    pub name: String,
+    pub version: String,
+    pub source_url: String,
+    pub license: String,
+    pub license_file: String,
+    pub license_sha256: String,
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SidecarManifest {
     pub target: String,
+    #[serde(default)]
+    pub static_link_components: Vec<StaticLinkComponent>,
     pub sidecars: Vec<SidecarRecord>,
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct StaticLinkComponent {
+    pub package: String,
+    pub package_version: String,
+    pub source_url: String,
+    pub license: String,
+    pub license_files: Vec<SidecarSupportFile>,
+    pub linked_into: Vec<Tool>,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct SidecarStatus {
@@ -131,6 +153,46 @@ pub fn verify_sidecar(
     for support_file in &record.support_files {
         verify_registered_file(root, &support_file.file, &support_file.sha256, tool)?;
     }
+    for component in &record.bundled_components {
+        if component.name.trim().is_empty()
+            || component.version.trim().is_empty()
+            || component.source_url.trim().is_empty()
+            || component.license.trim().is_empty()
+            || component.license_file.trim().is_empty()
+            || component.license_sha256.len() != 64
+        {
+            return Err(DesktopError::UnsupportedTool(format!(
+                "{} bundled component registration is incomplete",
+                tool_name(tool)
+            )));
+        }
+        verify_registered_file(
+            root,
+            &component.license_file,
+            &component.license_sha256,
+            tool,
+        )?;
+    }
+    for component in manifest
+        .static_link_components
+        .iter()
+        .filter(|component| component.linked_into.contains(tool))
+    {
+        if component.package.trim().is_empty()
+            || component.package_version.trim().is_empty()
+            || component.source_url.trim().is_empty()
+            || component.license.trim().is_empty()
+            || component.license_files.is_empty()
+        {
+            return Err(DesktopError::UnsupportedTool(format!(
+                "{} static-link component registration is incomplete",
+                tool_name(tool)
+            )));
+        }
+        for license_file in &component.license_files {
+            verify_registered_file(root, &license_file.file, &license_file.sha256, tool)?;
+        }
+    }
     Ok(path)
 }
 
@@ -205,27 +267,29 @@ pub fn verify_bundled_sidecar_versions(
     root: &Path,
     manifest: &SidecarManifest,
 ) -> Result<Vec<SidecarVersionEvidence>, DesktopError> {
-    [
-        Tool::Fastp,
-        Tool::Hisat2,
-        Tool::Hisat2Build,
-        Tool::FeatureCounts,
-    ]
-    .into_iter()
-    .map(|tool| {
+    if manifest.sidecars.is_empty() {
+        return Err(DesktopError::UnsupportedTool(
+            "sidecar manifest contains no registered tools".into(),
+        ));
+    }
+    manifest
+        .sidecars
+        .iter()
+        .map(|record| record.tool.clone())
+        .map(|tool| {
         let record = manifest
             .sidecars
             .iter()
             .find(|record| record.tool == tool)
             .ok_or_else(|| DesktopError::UnsupportedTool(tool_name(&tool).into()))?;
         let program = verify_sidecar(root, manifest, &tool)?;
-        let version_argument = if tool == Tool::FeatureCounts {
-            "-v"
-        } else {
-            "--version"
+        let version_arguments: &[&str] = match tool {
+            Tool::FeatureCounts => &["-v"],
+            Tool::Kallisto => &["version"],
+            _ => &["--version"],
         };
         let output = Command::new(program)
-            .arg(version_argument)
+            .args(version_arguments)
             .stdin(Stdio::null())
             .output()
             .map_err(|error| {
@@ -412,6 +476,177 @@ impl ProcessSupervisor {
                 None,
                 Some(0),
                 "all commands completed".into(),
+            );
+        });
+        Ok(initial)
+    }
+
+    pub fn start_kallisto_with_reporter(
+        &self,
+        root: PathBuf,
+        manifest: SidecarManifest,
+        plan: crate::kallisto::KallistoRunPlan,
+        reporter: LogReporter,
+    ) -> Result<RunStatus, DesktopError> {
+        let verified = plan
+            .commands
+            .clone()
+            .into_iter()
+            .map(|command| {
+                verify_sidecar(&root, &manifest, &command.tool).map(|path| (command, path))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        if plan.final_output_dir.exists() {
+            return Err(DesktopError::Process(
+                "refusing to overwrite an existing result directory".into(),
+            ));
+        }
+        fs::create_dir_all(&plan.temporary_dir).map_err(|error| {
+            DesktopError::Process(format!("could not create temporary directory: {error}"))
+        })?;
+        let kallisto_version = manifest
+            .sidecars
+            .iter()
+            .find(|record| record.tool == Tool::Kallisto)
+            .map(|record| record.version.clone())
+            .ok_or_else(|| DesktopError::UnsupportedTool("kallisto".into()))?;
+        let run_id = plan.run_id;
+        let initial = RunStatus {
+            run_id,
+            state: "queued".into(),
+            active_tool: None,
+            exit_code: None,
+            detail: "kallisto pipeline sidecars verified; run queued".into(),
+        };
+        self.inner
+            .statuses
+            .lock()
+            .map_err(|_| DesktopError::Process("status lock poisoned".into()))?
+            .insert(run_id, initial.clone());
+        let inner = Arc::clone(&self.inner);
+        thread::spawn(move || {
+            let mut stages = Vec::new();
+            for (command, program) in verified {
+                if is_cancelled(&inner, run_id) {
+                    let _ = cleanup_kallisto_partial(&plan);
+                    return;
+                }
+                set_status(
+                    &inner,
+                    run_id,
+                    "running",
+                    Some(command.tool.clone()),
+                    None,
+                    format!("running {}", tool_name(&command.tool)),
+                );
+                let stage_started = chrono::Utc::now();
+                let mut child = match Command::new(program)
+                    .args(&command.args)
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                {
+                    Ok(child) => child,
+                    Err(error) => {
+                        set_status(
+                            &inner,
+                            run_id,
+                            "failed",
+                            Some(command.tool),
+                            None,
+                            error.to_string(),
+                        );
+                        let _ = cleanup_kallisto_partial(&plan);
+                        return;
+                    }
+                };
+                if let Some(stdout) = child.stdout.take() {
+                    stream_lines(
+                        stdout,
+                        run_id,
+                        command.tool.clone(),
+                        "stdout",
+                        Arc::clone(&reporter),
+                    );
+                }
+                if let Some(stderr) = child.stderr.take() {
+                    stream_lines(
+                        stderr,
+                        run_id,
+                        command.tool.clone(),
+                        "stderr",
+                        Arc::clone(&reporter),
+                    );
+                }
+                let child = Arc::new(Mutex::new(child));
+                if let Ok(mut active) = inner.active.lock() {
+                    active.insert(run_id, Arc::clone(&child));
+                }
+                let result = child
+                    .lock()
+                    .map_err(|_| ())
+                    .and_then(|mut child| child.wait().map_err(|_| ()));
+                if let Ok(mut active) = inner.active.lock() {
+                    active.remove(&run_id);
+                }
+                if is_cancelled(&inner, run_id) {
+                    let _ = cleanup_kallisto_partial(&plan);
+                    return;
+                }
+                match result {
+                    Ok(status) if status.success() => {
+                        let stage_finished = chrono::Utc::now();
+                        let elapsed_milliseconds =
+                            (stage_finished - stage_started).num_milliseconds();
+                        stages.push(crate::kallisto::KallistoStageRecord {
+                            tool: command.tool,
+                            started_at: stage_started,
+                            finished_at: stage_finished,
+                            elapsed_milliseconds,
+                            exit_code: 0,
+                        });
+                    }
+                    Ok(status) => {
+                        set_status(
+                            &inner,
+                            run_id,
+                            "failed",
+                            Some(command.tool),
+                            status.code(),
+                            "sidecar exited unsuccessfully".into(),
+                        );
+                        let _ = cleanup_kallisto_partial(&plan);
+                        return;
+                    }
+                    Err(()) => {
+                        set_status(
+                            &inner,
+                            run_id,
+                            "failed",
+                            Some(command.tool),
+                            None,
+                            "could not wait for sidecar".into(),
+                        );
+                        let _ = cleanup_kallisto_partial(&plan);
+                        return;
+                    }
+                }
+            }
+            if let Err(error) =
+                crate::kallisto::finalize_kallisto_run(&plan, &kallisto_version, &stages)
+            {
+                set_status(&inner, run_id, "failed", None, None, error.to_string());
+                let _ = cleanup_kallisto_partial(&plan);
+                return;
+            }
+            set_status(
+                &inner,
+                run_id,
+                "completed",
+                None,
+                Some(0),
+                "kallisto results validated and atomically published".into(),
             );
         });
         Ok(initial)
@@ -725,6 +960,17 @@ fn cleanup_partial(plan: &crate::RunPlan) -> Result<(), DesktopError> {
     Ok(())
 }
 
+fn cleanup_kallisto_partial(
+    plan: &crate::kallisto::KallistoRunPlan,
+) -> Result<(), DesktopError> {
+    if plan.temporary_dir.exists() {
+        fs::remove_dir_all(&plan.temporary_dir).map_err(|error| {
+            DesktopError::Process(format!("could not clean partial kallisto files: {error}"))
+        })?;
+    }
+    Ok(())
+}
+
 fn cleanup_index_partial(plan: &crate::index::IndexBuildPlan) -> Result<(), DesktopError> {
     if plan.temporary_dir.exists() {
         fs::remove_dir_all(&plan.temporary_dir).map_err(|error| {
@@ -776,6 +1022,7 @@ mod tests {
         let root = std::env::temp_dir();
         let manifest = SidecarManifest {
             target: "test".into(),
+            static_link_components: Vec::new(),
             sidecars: vec![SidecarRecord {
                 tool: Tool::Fastp,
                 file: "..\\outside.exe".into(),
@@ -788,12 +1035,61 @@ mod tests {
                 license_file: String::new(),
                 license_sha256: String::new(),
                 support_files: Vec::new(),
+                bundled_components: Vec::new(),
             }],
         };
         assert!(matches!(
             verify_sidecar(&root, &manifest, &Tool::Fastp),
             Err(DesktopError::UnsafePath(_))
         ));
+    }
+
+    #[test]
+    fn rejects_tampered_static_component_license() {
+        let root = std::env::temp_dir().join(format!(
+            "rna-seq-sidecar-license-test-{}",
+            Uuid::new_v4()
+        ));
+        fs::create_dir_all(root.join("licenses")).unwrap();
+        fs::write(root.join("fastp"), b"binary").unwrap();
+        fs::write(root.join("licenses/tool.txt"), b"tool license").unwrap();
+        fs::write(root.join("licenses/runtime.txt"), b"runtime license").unwrap();
+        let hash = |bytes: &[u8]| format!("{:x}", Sha256::digest(bytes));
+        let manifest = SidecarManifest {
+            target: "test".into(),
+            static_link_components: vec![StaticLinkComponent {
+                package: "runtime".into(),
+                package_version: "1".into(),
+                source_url: "https://example.invalid/runtime".into(),
+                license: "MIT".into(),
+                license_files: vec![SidecarSupportFile {
+                    file: "licenses/runtime.txt".into(),
+                    sha256: hash(b"runtime license"),
+                }],
+                linked_into: vec![Tool::Fastp],
+            }],
+            sidecars: vec![SidecarRecord {
+                tool: Tool::Fastp,
+                file: "fastp".into(),
+                sha256: hash(b"binary"),
+                version: "1".into(),
+                source_url: "https://example.invalid/fastp".into(),
+                source_revision: "revision".into(),
+                build_provenance: "workflow".into(),
+                license: "MIT".into(),
+                license_file: "licenses/tool.txt".into(),
+                license_sha256: hash(b"tool license"),
+                support_files: Vec::new(),
+                bundled_components: Vec::new(),
+            }],
+        };
+        assert!(verify_sidecar(&root, &manifest, &Tool::Fastp).is_ok());
+        fs::write(root.join("licenses/runtime.txt"), b"tampered").unwrap();
+        assert!(matches!(
+            verify_sidecar(&root, &manifest, &Tool::Fastp),
+            Err(DesktopError::UnsupportedTool(_))
+        ));
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

@@ -5,33 +5,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RNA-seq Local</title>
     <style>
-      :root {
-        color: #e8f5f8;
-        background: #0f3546;
-        font-family: system-ui, sans-serif;
-      }
-      body {
-        display: grid;
-        min-height: 100vh;
-        margin: 0;
-        place-items: center;
-      }
-      main {
-        width: min(36rem, calc(100% - 3rem));
-      }
-      p {
-        color: #c6e2e9;
-        line-height: 1.6;
-      }
+      :root { color: #e8f5f8; background: #092d3c; font-family: Inter, system-ui, sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: radial-gradient(circle at top left, #17566b, #092d3c 45rem); }
+      main { width: min(68rem, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 4rem; }
+      header p, .muted { color: #b8d7df; line-height: 1.55; }
+      .chooser { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+      .engine { border: 1px solid #37778a; background: #0d3a4b; color: inherit; border-radius: .9rem; padding: 1.1rem; text-align: left; cursor: pointer; }
+      .engine[aria-pressed="true"] { border-color: #61d6ca; box-shadow: 0 0 0 2px #61d6ca44; }
+      .engine:disabled { cursor: not-allowed; opacity: .55; }
+      .engine strong { display: block; font-size: 1.12rem; margin-bottom: .35rem; }
+      .badge { display: inline-block; margin-top: .7rem; padding: .2rem .5rem; border-radius: 999px; color: #092d3c; background: #8ee3d8; font-size: .78rem; font-weight: 700; }
+      section { border: 1px solid #2f6576; border-radius: .9rem; background: #0b3444e8; padding: 1.25rem; }
+      form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem 1rem; }
+      label { display: grid; gap: .35rem; color: #d6edf1; font-size: .9rem; }
+      label.wide, .actions, .status, #hisat-fields, #kallisto-fields { grid-column: 1 / -1; }
+      #hisat-fields, #kallisto-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem 1rem; }
+      input, select { width: 100%; border: 1px solid #477d8c; border-radius: .45rem; background: #061f2a; color: #edfafa; padding: .62rem .7rem; }
+      label.check { display: flex; align-items: center; gap: .55rem; }
+      label.check input { width: auto; }
+      button[type="submit"], #cancel { border: 0; border-radius: .5rem; padding: .7rem 1rem; font-weight: 750; cursor: pointer; }
+      button[type="submit"] { background: #75ded2; color: #06232d; }
+      #cancel { background: #f0b9aa; color: #3b140b; margin-left: .5rem; }
+      pre { max-height: 15rem; overflow: auto; white-space: pre-wrap; background: #051b24; border-radius: .55rem; padding: .8rem; color: #c8e8ed; }
+      [hidden] { display: none !important; }
+      @media (max-width: 680px) { form, #hisat-fields, #kallisto-fields { grid-template-columns: 1fr; } }
     </style>
   </head>
   <body>
     <main>
-      <h1>RNA-seq Local</h1>
-      <p>
-        The verified native mapping pipeline is installed. The desktop workflow
-        interface will be connected in the next implementation phase.
-      </p>
+      <header>
+        <h1>RNA-seq Local</h1>
+        <p>All reads, indexes, annotations, and results stay on this computer. Choose the scientific question first; the two engines do not produce interchangeable results.</p>
+      </header>
+      <div class="chooser" role="group" aria-label="Analysis engine">
+        <button class="engine" data-engine="kallisto" aria-pressed="true">
+          <strong>Kallisto quantification</strong>
+          Pseudoalignment against a transcriptome index. Produces transcript-level estimated counts and TPM; it does not create genomic alignments or gene counts.
+          <span class="badge">Fast transcript abundance</span>
+        </button>
+        <button class="engine" data-engine="hisat2" aria-pressed="false">
+          <strong>HISAT2 + featureCounts</strong>
+          Alignment against a genome index followed by annotation-aware counting. Produces gene/feature-level raw counts, Length, TPM, and an assignment summary.
+          <span class="badge">Genome mapping and counting</span>
+        </button>
+      </div>
+
+      <section>
+        <h2 id="form-title">Native Kallisto 0.52.0</h2>
+        <p id="form-help" class="muted">Use a Kallisto transcriptome index. For single-end reads, mean fragment length and standard deviation are required.</p>
+        <form id="run-form">
+          <input id="engine" type="hidden" value="kallisto" />
+          <label>Sample name<input id="sample-name" required value="sample-1" /></label>
+          <label>Threads<input id="threads" required type="number" min="1" max="64" value="4" /></label>
+          <label class="wide">Read 1 — absolute local path<input id="r1" required placeholder="C:\data\sample_R1.fastq.gz" /></label>
+          <label class="wide">Read 2 — absolute local path, blank for single-end<input id="r2" placeholder="C:\data\sample_R2.fastq.gz" /></label>
+          <label class="wide" id="index-label"><span id="index-label-text">Kallisto transcriptome index — absolute local path</span><input id="index-path" required placeholder="C:\references\transcripts.idx" /></label>
+          <div id="hisat-fields" hidden>
+            <label class="wide">Genome annotation (GTF/GFF3) — absolute local path<input id="annotation" placeholder="C:\references\annotation.gtf" /></label>
+            <label>Strandedness<select id="strandedness"><option value="0">Unstranded</option><option value="1">Forward</option><option value="2">Reverse</option></select></label>
+            <label>Feature / grouping<input value="exon / gene_id" disabled /></label>
+            <label class="check"><input id="keep-sam" type="checkbox" /> Keep large SAM after success</label>
+          </div>
+          <div id="kallisto-fields">
+            <label>Single-end fragment mean<input id="fragment-length" type="number" min="1" step="0.1" placeholder="200" /></label>
+            <label>Single-end fragment SD<input id="fragment-sd" type="number" min="0.1" step="0.1" placeholder="20" /></label>
+            <label>Bootstrap samples<input id="bootstraps" type="number" min="0" max="1000" value="0" /></label>
+            <label class="check"><input id="bias" type="checkbox" /> Sequence-specific bias correction</label>
+          </div>
+          <label class="wide">Output parent directory — absolute local path<input id="output-dir" required placeholder="C:\RNA-seq results" /></label>
+          <label class="check wide"><input id="fastp" type="checkbox" /> Run verified native fastp first</label>
+          <div class="actions"><button id="run-button" type="submit">Validate and start</button><button id="cancel" type="button" hidden>Cancel process tree</button></div>
+          <p id="status" class="status muted">Ready. The backend accepts typed fields only; arbitrary commands and shell text are not accepted.</p>
+        </form>
+        <pre id="logs" aria-label="Capped native process log">No process output yet.</pre>
+      </section>
     </main>
+    <script src="app.js"></script>
   </body>
 </html>

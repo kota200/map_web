@@ -253,9 +253,10 @@ mod tests {
     use super::*;
     #[test]
     fn rejects_unsafe_index_name() {
+        let root = std::env::temp_dir().join("rna-seq-index-plan-test");
         let request = IndexBuildRequest {
-            fasta: PathBuf::from(r"C:\ref\genome.fa"),
-            cache_dir: PathBuf::from(r"C:\cache"),
+            fasta: root.join("ref/genome.fa"),
+            cache_dir: root.join("cache"),
             index_name: "..\\escape".into(),
             threads: 4,
         };
@@ -263,9 +264,10 @@ mod tests {
     }
     #[test]
     fn plans_atomic_index_build() {
+        let root = std::env::temp_dir().join("rna-seq-index-plan-test");
         let request = IndexBuildRequest {
-            fasta: PathBuf::from(r"C:\ref\日本語.fa"),
-            cache_dir: PathBuf::from(r"C:\cache"),
+            fasta: root.join("ref/日本語.fa"),
+            cache_dir: root.join("cache"),
             index_name: "arabidopsis".into(),
             threads: 4,
         };

@@ -1,0 +1,11 @@
+{
+  "tool": "kallisto",
+  "version": "0.52.0",
+  "source_url": "https://github.com/pachterlab/kallisto/tree/v0.52.0",
+  "source_revision": "4e9f29cf3b021260415430c057a22469ca081391",
+  "license": "BSD-2-Clause",
+  "license_file": "KALLISTO_LICENSE.txt",
+  "windows_build_recipe": "desktop/scripts/prepare-kallisto-windows.sh",
+  "windows_build_basis": "upstream .make_binaries.windows.txt at the pinned revision",
+  "artifact_hash_policy": "Every platform workflow calculates SHA-256 after the exact binary is built; manifests must never contain a placeholder hash."
+}
