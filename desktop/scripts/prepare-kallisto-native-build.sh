@@ -23,7 +23,7 @@ sed -i.bak \
   's#-DCMAKE_INSTALL_PREFIX=${PREFIX}$#-DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_POLICY_VERSION_MINIMUM=3.5#' \
   "$cmake_file"
 sed -i.bak \
-  's#if(NOT EMSCRIPTEN)#if(NOT EMSCRIPTEN AND NOT (APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm"))#' \
+  '/set(CMAKE_C_FLAGS.*-mno-avx2/d; /set(CMAKE_CXX_FLAGS.*-mno-avx2/d' \
   "$bifrost_cmake_file"
 sed -i.bak \
   's#o\.sz_link\[i\]\.load()#o.unitig_cs_link[i].load()#' \
@@ -34,7 +34,10 @@ rm -f "$bifrost_storage_file.bak"
 
 grep -Fq '${DO_ENABLE_COMPILATION_ARCH} -DCMAKE_POLICY_VERSION_MINIMUM=3.5' "$cmake_file"
 grep -Fq '${PREFIX} -DCMAKE_POLICY_VERSION_MINIMUM=3.5' "$cmake_file"
-grep -Fq 'if(NOT EMSCRIPTEN AND NOT (APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm"))' "$bifrost_cmake_file"
+if grep -Fq -- '-mno-avx2' "$bifrost_cmake_file"; then
+  echo 'Bifrost still contains a non-portable -mno-avx2 flag' >&2
+  exit 1
+fi
 grep -Fq 'o.unitig_cs_link[i].load()' "$bifrost_storage_file"
 git -C "$source_dir" diff --check
 git -C "$source_dir" diff --binary > "$source_dir/kallisto-native-cmake.patch"
