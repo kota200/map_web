@@ -1,0 +1,3 @@
+65b359aac21a688fb4f72b29677960ddb759c8749e37f0503e6695d6bb46cf06 *.sidecar-build/fastp-v0.23.4-source.tar.gz
+68a492ac2896aeb49685d7b93b2e954152810ec2ccb095777a5f9e19fff07627 *.sidecar-build/hisat2-v2.2.3-source.tar.gz
+6392d7c66831cdd767e58251892a79a51b6fab8ed0ba9671ad5e85ff1ab01eaa *.sidecar-build/subread-source.tar.gz

@@ -3,11 +3,19 @@
   "productName": "RNA-seq Local",
   "version": "0.1.0",
   "identifier": "local.rnaseq.desktop",
-  "build": { "frontendDist": "../../" },
+  "build": { "frontendDist": "../frontend" },
   "app": { "windows": [{ "title": "RNA-seq Local" }], "security": { "capabilities": [] } },
   "bundle": {
     "active": false,
+    "icon": ["icons/icon.ico"],
     "externalBin": ["binaries/fastp", "binaries/hisat2", "binaries/hisat2-build", "binaries/featureCounts"],
-    "resources": ["binaries/sidecars.windows-x86_64.json"]
+    "resources": {
+      "binaries/sidecars.windows-x86_64.json": "sidecars.windows-x86_64.json",
+      "binaries/licenses/*": "licenses/",
+      "binaries/hisat2-align-s.exe": "hisat2-align-s.exe",
+      "binaries/hisat2-align-l.exe": "hisat2-align-l.exe",
+      "binaries/hisat2-build-s.exe": "hisat2-build-s.exe",
+      "binaries/hisat2-build-l.exe": "hisat2-build-l.exe"
+    }
   }
 }

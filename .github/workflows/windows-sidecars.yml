@@ -4,8 +4,11 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - '.github/workflows/windows-sidecars.yml'
       - 'desktop/sidecar-dispatcher/**'
       - 'desktop/scripts/package-windows-sidecars.ps1'
+      - 'desktop/scripts/new-windows-app-icon.ps1'
+      - 'desktop/src-tauri/**'
       - 'tools/fastp/source.lock.json'
       - 'tools/hisat2/source.lock.json'
       - 'tools/featurecounts/source.lock.json'
@@ -20,13 +23,13 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
           update: true
           install: >-
-            git make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-zlib
+            git make unzip mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-zlib
             mingw-w64-ucrt-x86_64-isa-l mingw-w64-ucrt-x86_64-libdeflate
       - name: Fetch fixed upstream sources
         run: |
@@ -43,15 +46,15 @@ jobs:
           sha256sum --check .sidecar-build/subread-source.sha256
       - name: Build fastp, HISAT2, and script-free HISAT2 launchers
         run: |
-          make -C .sidecar-build/src/fastp -j2
+          make -C .sidecar-build/src/fastp -j2 static
           cp .sidecar-build/src/fastp/fastp .sidecar-build/out/fastp.exe
-          make -C .sidecar-build/src/hisat2 -j2 hisat2-align-s hisat2-align-l hisat2-build-s hisat2-build-l
+          make -C .sidecar-build/src/hisat2 -j2 CXX='g++ -static -static-libgcc -static-libstdc++' hisat2-align-s hisat2-align-l hisat2-build-s hisat2-build-l
           cp .sidecar-build/src/hisat2/hisat2-align-s .sidecar-build/out/hisat2-align-s.exe
           cp .sidecar-build/src/hisat2/hisat2-align-l .sidecar-build/out/hisat2-align-l.exe
           cp .sidecar-build/src/hisat2/hisat2-build-s .sidecar-build/out/hisat2-build-s.exe
           cp .sidecar-build/src/hisat2/hisat2-build-l .sidecar-build/out/hisat2-build-l.exe
-          g++ -std=c++11 -O2 -municode desktop/sidecar-dispatcher/hisat2_dispatcher.cpp -o .sidecar-build/out/hisat2.exe
-          g++ -std=c++11 -O2 -municode -DHISAT2_BUILD_DISPATCHER desktop/sidecar-dispatcher/hisat2_dispatcher.cpp -o .sidecar-build/out/hisat2-build.exe
+          g++ -std=c++11 -O2 -municode -static -static-libgcc -static-libstdc++ desktop/sidecar-dispatcher/hisat2_dispatcher.cpp -o .sidecar-build/out/hisat2.exe
+          g++ -std=c++11 -O2 -municode -static -static-libgcc -static-libstdc++ -DHISAT2_BUILD_DISPATCHER desktop/sidecar-dispatcher/hisat2_dispatcher.cpp -o .sidecar-build/out/hisat2-build.exe
       - name: Stage official featureCounts and licenses
         run: |
           unzip -q .sidecar-build/subread.zip -d .sidecar-build/subread
@@ -59,33 +62,135 @@ jobs:
           cp tools/fastp/licenses/fastp-MIT.txt .sidecar-build/licenses/fastp-MIT.txt
           cp tools/hisat2/licenses/HISAT2-GPL-3.0.txt .sidecar-build/licenses/HISAT2-GPL-3.0.txt
           cp tools/featurecounts/licenses/Subread-GPL-3.0.txt .sidecar-build/licenses/Subread-GPL-3.0.txt
-          cp /ucrt64/bin/libisal.dll /ucrt64/bin/libdeflate.dll /ucrt64/bin/libgcc_s_seh-1.dll /ucrt64/bin/libstdc++-6.dll /ucrt64/bin/libwinpthread-1.dll .sidecar-build/out/
+          # These executables are distributed without MSYS2 runtime DLLs. This
+          # gate prevents an accidental dynamic-linkage regression.
+          runtime_dlls="$(
+            for executable in .sidecar-build/out/*.exe; do
+              ldd "$executable" | sed -n 's#.*=> \(/ucrt64/bin/[^ ]*\.dll\).*#\1#p'
+            done | sort -u
+          )"
+          if [ -n "$runtime_dlls" ]; then
+            echo "Unexpected dynamically linked MSYS2 runtime DLLs:"
+            echo "$runtime_dlls"
+            exit 1
+          fi
+
+          # Preserve the exact static-library package versions, origins, and
+          # every license file installed by MSYS2. The package script hashes
+          # these records into the sidecar manifest.
+          printf 'package\tpackage_version\tsource_url\tlicense\tlicense_files\tlinked_into\n' > .sidecar-build/static-components.tsv
+          for package in \
+            mingw-w64-ucrt-x86_64-gcc-libs \
+            mingw-w64-ucrt-x86_64-libwinpthread \
+            mingw-w64-ucrt-x86_64-isa-l \
+            mingw-w64-ucrt-x86_64-libdeflate; do
+            package_version="$(pacman -Q "$package" | awk '{print $2}')"
+            license_expression="$(pacman -Qi "$package" | sed -n 's/^Licenses[[:space:]]*:[[:space:]]*//p')"
+            license_files=()
+            while IFS= read -r license_source; do
+              [ -f "$license_source" ] || continue
+              license_relative="${license_source#*/share/licenses/}"
+              license_destination="licenses/static-${package}-${license_relative//\//-}"
+              cp "$license_source" ".sidecar-build/$license_destination"
+              license_files+=("$license_destination")
+            done < <(pacman -Qlq "$package" | grep '/share/licenses/')
+            if [ "${#license_files[@]}" -eq 0 ]; then
+              echo "No license files were installed for $package"
+              exit 1
+            fi
+            joined_license_files="$(IFS=';'; echo "${license_files[*]}")"
+            if [ "$package" = mingw-w64-ucrt-x86_64-gcc-libs ]; then
+              linked_into='Fastp;Hisat2;Hisat2Build'
+            else
+              linked_into='Fastp'
+            fi
+            printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+              "$package" \
+              "$package_version" \
+              "https://packages.msys2.org/package/$package" \
+              "$license_expression" \
+              "$joined_license_files" \
+              "$linked_into" >> .sidecar-build/static-components.tsv
+          done
       - name: Verify executable versions and package manifest
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          .\.sidecar-build\out\fastp.exe --version
-          .\.sidecar-build\out\hisat2.exe --version
-          .\.sidecar-build\out\hisat2-build.exe --version
-          .\.sidecar-build\out\featureCounts.exe -v
+          function Assert-NativeVersion([string]$Executable, [string[]]$Arguments, [string]$ExpectedVersion) {
+            $versionOutput = (& $Executable @Arguments 2>&1 | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0) {
+              throw "$Executable version command exited with $LASTEXITCODE`: $versionOutput"
+            }
+            if ($versionOutput -notmatch [regex]::Escape($ExpectedVersion)) {
+              throw "$Executable version output does not contain $ExpectedVersion`: $versionOutput"
+            }
+            Write-Host $versionOutput
+          }
+          Assert-NativeVersion .\.sidecar-build\out\fastp.exe @('--version') '0.23.4'
+          Assert-NativeVersion .\.sidecar-build\out\hisat2.exe @('--version') '2.2.3'
+          Assert-NativeVersion .\.sidecar-build\out\hisat2-build.exe @('--version') '2.2.3'
+          Assert-NativeVersion .\.sidecar-build\out\featureCounts.exe @('-v') '2.1.1'
           Copy-Item .sidecar-build\licenses -Destination .sidecar-build\out\licenses -Recurse
-          .\desktop\scripts\package-windows-sidecars.ps1 -InputDirectory .sidecar-build\out -OutputDirectory .sidecar-build\package
+          .\desktop\scripts\package-windows-sidecars.ps1 -InputDirectory .sidecar-build\out -OutputDirectory .sidecar-build\package -StaticComponentsPath .sidecar-build\static-components.tsv
           Copy-Item .sidecar-build\licenses -Destination .sidecar-build\package\licenses -Recurse
+      - name: Generate deterministic Windows application icon
+        shell: pwsh
+        run: .\desktop\scripts\new-windows-app-icon.ps1 -OutputPath desktop\src-tauri\icons\icon.ico
+      - uses: actions/upload-artifact@v7
+        with:
+          name: desktop-tauri-windows-icon
+          path: desktop/src-tauri/icons/icon.ico
+          if-no-files-found: error
+      - name: Launch bundled sidecars from the Tauri application
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Copy-Item .sidecar-build\package\* -Destination desktop\src-tauri\binaries -Recurse -Force
+          cargo fmt --manifest-path desktop\src-tauri\Cargo.toml --all -- --check
+          if ($LASTEXITCODE -ne 0) { throw "Rust formatting check failed with $LASTEXITCODE" }
+          cargo test --manifest-path desktop\src-tauri\Cargo.toml
+          if ($LASTEXITCODE -ne 0) { throw "Rust core tests failed with $LASTEXITCODE" }
+          cargo test --manifest-path desktop\src-tauri\Cargo.toml --features desktop --test bundled_sidecars -- --nocapture
+          if ($LASTEXITCODE -ne 0) { throw "Tauri bundled-sidecar integration test failed with $LASTEXITCODE" }
+          cargo build --manifest-path desktop\src-tauri\Cargo.toml --features desktop
+          if ($LASTEXITCODE -ne 0) { throw "Tauri desktop-feature build failed with $LASTEXITCODE" }
       - name: Archive corresponding source and build evidence
         run: |
           git -C .sidecar-build/src/fastp archive --format=tar.gz --prefix=fastp-v0.23.4/ HEAD > .sidecar-build/fastp-v0.23.4-source.tar.gz
           git -C .sidecar-build/src/hisat2 archive --format=tar.gz --prefix=hisat2-v2.2.3/ HEAD > .sidecar-build/hisat2-v2.2.3-source.tar.gz
-          cp .sidecar-build/subread-source.tar.gz .sidecar-build/
           sha256sum .sidecar-build/*.tar.gz > .sidecar-build/CORRESPONDING_SOURCE_SHA256SUMS
-      - uses: actions/upload-artifact@v4
+      - name: Verify artifact payloads
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $requiredFiles = @(
+            '.sidecar-build/fastp-v0.23.4-source.tar.gz',
+            '.sidecar-build/hisat2-v2.2.3-source.tar.gz',
+            '.sidecar-build/subread-source.tar.gz',
+            '.sidecar-build/CORRESPONDING_SOURCE_SHA256SUMS'
+          )
+          foreach ($requiredFile in $requiredFiles) {
+            if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
+              throw "Required artifact file was not created: $requiredFile"
+            }
+          }
+          $sidecarFiles = @(Get-ChildItem -LiteralPath .sidecar-build/package -File -Recurse)
+          if ($sidecarFiles.Count -eq 0) {
+            throw 'The packaged sidecar artifact is empty.'
+          }
+      - uses: actions/upload-artifact@v7
         with:
           name: desktop-sidecars-windows-x64
           path: .sidecar-build/package
+          include-hidden-files: true
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: desktop-sidecars-windows-x64-corresponding-source
           path: |
-            .sidecar-build/*-source.tar.gz
+            .sidecar-build/fastp-v0.23.4-source.tar.gz
+            .sidecar-build/hisat2-v2.2.3-source.tar.gz
+            .sidecar-build/subread-source.tar.gz
             .sidecar-build/CORRESPONDING_SOURCE_SHA256SUMS
+          include-hidden-files: true
           if-no-files-found: error

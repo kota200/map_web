@@ -1,0 +1,9 @@
+# Manifest license hashes are calculated over the upstream LF bytes. Preserve
+# those bytes on Windows so fail-closed runtime verification remains stable.
+desktop/src-tauri/binaries/licenses/** text eol=lf
+desktop/src-tauri/binaries/sidecars.windows-x86_64.json text eol=lf
+desktop/corresponding-source/windows-x64/CORRESPONDING_SOURCE_SHA256SUMS text eol=lf
+
+desktop/src-tauri/binaries/*.exe binary
+desktop/src-tauri/icons/*.ico binary
+desktop/corresponding-source/windows-x64/*.tar.gz binary

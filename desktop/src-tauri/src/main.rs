@@ -4,11 +4,14 @@ use rna_seq_local_desktop::{
         ExistingIndexRequest, IndexBuildPlan, IndexBuildRequest, IndexInspection,
     },
     plan_hisat2,
-    sidecars::{sidecar_statuses, ProcessSupervisor, RunStatus, SidecarManifest, SidecarStatus},
+    sidecars::{
+        sidecar_statuses, verify_bundled_sidecar_versions, ProcessSupervisor, RunStatus,
+        SidecarManifest, SidecarStatus,
+    },
     Hisat2Request, RunPlan,
 };
 use std::{fs, path::PathBuf, sync::Arc};
-use tauri::{Emitter, State};
+use tauri::{Emitter, Manager, State};
 use uuid::Uuid;
 
 struct AppState {
@@ -122,6 +125,23 @@ fn cleanup_orphan_temporary_directories(
 }
 
 fn main() {
+    if std::env::args_os().any(|argument| argument == "--verify-bundled-sidecars") {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("binaries");
+        let state = load_state(root.clone(), root.join("sidecars.windows-x86_64.json"))
+            .unwrap_or_else(|error| {
+                eprintln!("{error}");
+                std::process::exit(1);
+            });
+        let evidence =
+            verify_bundled_sidecar_versions(&root, &state.manifest).unwrap_or_else(|error| {
+                eprintln!("{error}");
+                std::process::exit(1);
+            });
+        for item in evidence {
+            println!("{:?}\t{}\t{}", item.tool, item.version, item.output);
+        }
+        return;
+    }
     tauri::Builder::default()
         .setup(|app| {
             let (sidecar_root, manifest_path) = if cfg!(debug_assertions) {
@@ -136,7 +156,6 @@ fn main() {
                     .path()
                     .resource_dir()
                     .unwrap_or_else(|error| panic!("could not locate bundled resources: {error}"))
-                    .join("binaries")
                     .join("sidecars.windows-x86_64.json");
                 (sidecars, manifest)
             };
