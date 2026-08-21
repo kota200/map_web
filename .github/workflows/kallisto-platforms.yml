@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/kallisto-platforms.yml'
       - 'desktop/scripts/package-kallisto-sidecar.ps1'
+      - 'desktop/scripts/prepare-kallisto-native-build.sh'
       - 'desktop/frontend/**'
       - 'desktop/src-tauri/**'
       - 'test-data/transcripts.fa'
@@ -46,6 +47,7 @@ jobs:
           git clone https://github.com/pachterlab/kallisto.git .sidecar-build/kallisto
           git -C .sidecar-build/kallisto checkout --detach 4e9f29cf3b021260415430c057a22469ca081391
           test "$(git -C .sidecar-build/kallisto rev-parse HEAD)" = 4e9f29cf3b021260415430c057a22469ca081391
+          bash desktop/scripts/prepare-kallisto-native-build.sh .sidecar-build/kallisto
       - name: Build portable Kallisto 0.52.0
         shell: bash
         run: |
@@ -58,6 +60,8 @@ jobs:
             -DZLIBNG=ON \
             -DENABLE_AVX2=OFF \
             -DCOMPILATION_ARCH=OFF
+          cmake --build .sidecar-build/build --target zlib-ng --parallel 2
+          cmake --build .sidecar-build/build --target bifrost --parallel 2
           cmake --build .sidecar-build/build --parallel 2
           .sidecar-build/build/src/kallisto version | tee .sidecar-build/kallisto-version.txt
           grep -F '0.52.0' .sidecar-build/kallisto-version.txt
@@ -104,7 +108,8 @@ jobs:
         run: |
           set -euo pipefail
           git -C .sidecar-build/kallisto archive --format=tar.gz --prefix=kallisto-v0.52.0/ HEAD > .sidecar-build/kallisto-v0.52.0-source.tar.gz
-          shasum -a 256 .sidecar-build/kallisto-v0.52.0-source.tar.gz > .sidecar-build/KALLISTO_SOURCE_SHA256SUMS
+          cp .sidecar-build/kallisto/kallisto-native-cmake.patch .sidecar-build/kallisto-native-cmake.patch
+          shasum -a 256 .sidecar-build/kallisto-v0.52.0-source.tar.gz .sidecar-build/kallisto-native-cmake.patch > .sidecar-build/KALLISTO_SOURCE_SHA256SUMS
       - name: Build unsigned platform installer
         shell: pwsh
         run: |
@@ -158,5 +163,6 @@ jobs:
           name: kallisto-source-${{ matrix.target }}
           path: |
             .sidecar-build/kallisto-v0.52.0-source.tar.gz
+            .sidecar-build/kallisto-native-cmake.patch
             .sidecar-build/KALLISTO_SOURCE_SHA256SUMS
           if-no-files-found: error

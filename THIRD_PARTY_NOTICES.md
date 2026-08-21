@@ -129,9 +129,10 @@ Do not assume disabled code can be omitted from source-archive notices without c
 - The Windows manifest also registers the exact GCC runtime and libwinpthread
   package versions and license files used by the static MinGW build. Runtime
   verification hashes those license files before any linked sidecar starts.
-- Linux and macOS builds archive the exact clean pinned source. Their binary and
-  installer hashes are generated independently on the target runner; a hash from
-  one architecture must never be reused for another.
+- Linux and macOS builds archive the exact clean pinned source plus the generated
+  CMake compatibility patch used for nested Bifrost/zlib-ng builds. Their binary
+  and installer hashes are generated independently on the target runner; a hash
+  from one architecture must never be reused for another.
 - Kallisto's permissive license does not remove the separate GPL corresponding-
   source obligations for HISAT2 and featureCounts in the full Windows package.
 

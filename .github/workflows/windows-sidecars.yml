@@ -8,6 +8,7 @@ on:
       - 'desktop/frontend/**'
       - 'desktop/sidecar-dispatcher/**'
       - 'desktop/scripts/package-windows-sidecars.ps1'
+      - 'desktop/scripts/prepare-kallisto-native-build.sh'
       - 'desktop/scripts/prepare-kallisto-windows.sh'
       - 'desktop/scripts/new-windows-app-icon.ps1'
       - 'desktop/src-tauri/**'
@@ -55,6 +56,7 @@ jobs:
         run: |
           make -C .sidecar-build/src/fastp -j2 static
           cp .sidecar-build/src/fastp/fastp .sidecar-build/out/fastp.exe
+          bash desktop/scripts/prepare-kallisto-native-build.sh .sidecar-build/src/kallisto
           bash desktop/scripts/prepare-kallisto-windows.sh .sidecar-build/src/kallisto
           cmake -S .sidecar-build/src/kallisto -B .sidecar-build/build/kallisto -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
@@ -65,6 +67,8 @@ jobs:
             -DLINK=static \
             -DCMAKE_CXX_FLAGS='-static-libgcc -static-libstdc++' \
             -DCMAKE_EXE_LINKER_FLAGS='-static -static-libgcc -static-libstdc++'
+          cmake --build .sidecar-build/build/kallisto --target zlib-ng --parallel 2
+          cmake --build .sidecar-build/build/kallisto --target bifrost --parallel 2
           cmake --build .sidecar-build/build/kallisto --parallel 2
           cp .sidecar-build/build/kallisto/src/kallisto.exe .sidecar-build/out/kallisto.exe
           make -C .sidecar-build/src/hisat2 -j2 CXX='g++ -static -static-libgcc -static-libstdc++' hisat2-align-s hisat2-align-l hisat2-build-s hisat2-build-l
