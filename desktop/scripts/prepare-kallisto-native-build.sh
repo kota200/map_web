@@ -23,6 +23,10 @@ sed -i.bak \
   's#-DCMAKE_INSTALL_PREFIX=${PREFIX}$#-DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_POLICY_VERSION_MINIMUM=3.5#' \
   "$cmake_file"
 sed -i.bak \
+  -e 's#BUILD_COMMAND cd build && make#BUILD_COMMAND cmake --build build#' \
+  -e 's#BUILD_COMMAND cd zlib-ng && make#BUILD_COMMAND cmake --build zlib-ng#' \
+  "$cmake_file"
+sed -i.bak \
   '/set(CMAKE_C_FLAGS.*-mno-avx2/d; /set(CMAKE_CXX_FLAGS.*-mno-avx2/d' \
   "$bifrost_cmake_file"
 sed -i.bak \
@@ -34,6 +38,8 @@ rm -f "$bifrost_storage_file.bak"
 
 grep -Fq '${DO_ENABLE_COMPILATION_ARCH} -DCMAKE_POLICY_VERSION_MINIMUM=3.5' "$cmake_file"
 grep -Fq '${PREFIX} -DCMAKE_POLICY_VERSION_MINIMUM=3.5' "$cmake_file"
+grep -Fq 'BUILD_COMMAND cmake --build build' "$cmake_file"
+grep -Fq 'BUILD_COMMAND cmake --build zlib-ng' "$cmake_file"
 if grep -Fq -- '-mno-avx2' "$bifrost_cmake_file"; then
   echo 'Bifrost still contains a non-portable -mno-avx2 flag' >&2
   exit 1

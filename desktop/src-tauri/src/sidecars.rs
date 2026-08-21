@@ -124,15 +124,7 @@ pub fn verify_sidecar(
         .iter()
         .find(|x| x.tool == *tool)
         .ok_or_else(|| DesktopError::UnsupportedTool(tool_name(tool).into()))?;
-    let relative = Path::new(&record.file);
-    if relative.is_absolute()
-        || relative.components().any(|component| {
-            matches!(
-                component,
-                Component::ParentDir | Component::RootDir | Component::Prefix(_)
-            )
-        })
-    {
+    if is_unsafe_registered_path(&record.file) {
         return Err(DesktopError::UnsafePath(record.file.clone()));
     }
     let path = verify_registered_file(root, &record.file, &record.sha256, tool)?;
@@ -203,14 +195,7 @@ fn verify_registered_file(
     tool: &Tool,
 ) -> Result<PathBuf, DesktopError> {
     let relative = Path::new(file);
-    if relative.is_absolute()
-        || relative.components().any(|component| {
-            matches!(
-                component,
-                Component::ParentDir | Component::RootDir | Component::Prefix(_)
-            )
-        })
-    {
+    if is_unsafe_registered_path(file) {
         return Err(DesktopError::UnsafePath(file.into()));
     }
     let path = root.join(relative);
@@ -228,6 +213,21 @@ fn verify_registered_file(
         )));
     }
     Ok(path)
+}
+
+fn is_unsafe_registered_path(file: &str) -> bool {
+    let relative = Path::new(file);
+    let portable = file.replace('\\', "/");
+    relative.is_absolute()
+        || relative.components().any(|component| {
+            matches!(
+                component,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        })
+        || portable.starts_with('/')
+        || portable.split('/').any(|component| component == "..")
+        || portable.as_bytes().get(1) == Some(&b':')
 }
 
 pub fn sidecar_statuses(root: &Path, manifest: &SidecarManifest) -> Vec<SidecarStatus> {
