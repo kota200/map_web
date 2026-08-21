@@ -84,7 +84,7 @@ Do not assume disabled code can be omitted from source-archive notices without c
 - `desktop/src-tauri/binaries/fastp-x86_64-pc-windows-msvc.exe` is built from
   fastp commit `1ffcaed6892832c09c4b4094c201cd4eff8fa622` (version 0.23.4).
   It is MIT-licensed and statically links the exact MSYS2 packages recorded in
-  `sidecars.windows-x86_64.json`: GCC runtime libraries 16.2.0-3 under the GCC
+  `sidecars.x86_64-pc-windows-msvc.json`: GCC runtime libraries 16.2.0-3 under the GCC
   Runtime Library Exception, libwinpthread
   14.0.0.r283.ga7cb47123-1, ISA-L 2.31.1-1, and libdeflate 1.25-1. Their
   complete installed license files and SHA-256 values are bundled in
@@ -109,8 +109,39 @@ Do not assume disabled code can be omitted from source-archive notices without c
   `desktop/corresponding-source/windows-x64`. The workflow and dispatcher source
   required to reproduce the modified package are also committed. Do not remove
   or separate these materials from a public binary release.
-- CI run `32385204268` verified that no packaged executable imports an MSYS2
+- Merged-main CI run `32437427175` (attempt 2) verified that no packaged executable imports an MSYS2
   runtime DLL. Windows operating-system libraries are not redistributed.
+
+## D2 native Kallisto sidecars
+
+Engineering evidence was generated successfully at commit
+`cbe1adff0a0b5b2af1b4b9dc730412648925c1de` by Windows run `32446706845` and
+Linux/macOS run `32446706737`. The uploaded target packages include the license
+files and hashes described below, together with source archives and generated
+compatibility patches. These artifacts are unsigned CI evidence, not an
+approved public distribution.
+
+- Native Kallisto remains pinned to version 0.52.0, commit
+  `4e9f29cf3b021260415430c057a22469ca081391`, and BSD-2-Clause. Every binary
+  package must reproduce the complete Kallisto license text in its bundled
+  materials.
+- The native build statically includes the Bifrost tree shipped by that Kallisto
+  revision (BSD-2-Clause) and the bundled zlib-ng tree (zlib license). Each
+  platform manifest records the component names, source URLs, complete local
+  license paths, and license SHA-256 values.
+- The Windows source transformation is derived from the pinned upstream file
+  `.make_binaries.windows.txt`. The exact generated patch and unmodified source
+  archive are uploaded with the Windows binary; build provenance points to the
+  checked-in transformation script and workflow.
+- The Windows manifest also registers the exact GCC runtime and libwinpthread
+  package versions and license files used by the static MinGW build. Runtime
+  verification hashes those license files before any linked sidecar starts.
+- Linux and macOS builds archive the exact clean pinned source plus the generated
+  CMake compatibility patch used for nested Bifrost/zlib-ng builds. Their binary
+  and installer hashes are generated independently on the target runner; a hash
+  from one architecture must never be reused for another.
+- Kallisto's permissive license does not remove the separate GPL corresponding-
+  source obligations for HISAT2 and featureCounts in the full Windows package.
 
 ## Release blockers
 
@@ -120,4 +151,8 @@ Do not assume disabled code can be omitted from source-archive notices without c
   equivalent access.
 - The WebAssembly distribution obligations remain separate from this desktop
   package and still require their own production-hosting review.
+- D2 CI produced unsigned NSIS, DMG, DEB, and AppImage test artifacts in the
+  accepted runs. They
+  are not public-release candidates until the relevant signing/notarization and
+  legal release checks are completed.
 - Do not claim legal compliance based only on this engineering inventory.

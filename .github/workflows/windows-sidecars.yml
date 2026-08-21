@@ -5,13 +5,17 @@ on:
   push:
     paths:
       - '.github/workflows/windows-sidecars.yml'
+      - 'desktop/frontend/**'
       - 'desktop/sidecar-dispatcher/**'
       - 'desktop/scripts/package-windows-sidecars.ps1'
+      - 'desktop/scripts/prepare-kallisto-native-build.sh'
+      - 'desktop/scripts/prepare-kallisto-windows.sh'
       - 'desktop/scripts/new-windows-app-icon.ps1'
       - 'desktop/src-tauri/**'
       - 'tools/fastp/source.lock.json'
       - 'tools/hisat2/source.lock.json'
       - 'tools/featurecounts/source.lock.json'
+      - 'tools/kallisto/source.lock.json'
 
 permissions:
   contents: read
@@ -31,6 +35,7 @@ jobs:
           install: >-
             git make unzip mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-zlib
             mingw-w64-ucrt-x86_64-isa-l mingw-w64-ucrt-x86_64-libdeflate
+            mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
       - name: Fetch fixed upstream sources
         run: |
           mkdir -p .sidecar-build/src .sidecar-build/out .sidecar-build/licenses
@@ -40,14 +45,32 @@ jobs:
           git clone https://github.com/DaehwanKimLab/hisat2.git .sidecar-build/src/hisat2
           git -C .sidecar-build/src/hisat2 checkout --detach 0d244324f98de541bce04d45c75e83bc3522f7f4
           test "$(git -C .sidecar-build/src/hisat2 rev-parse HEAD)" = 0d244324f98de541bce04d45c75e83bc3522f7f4
-          curl -L --fail -o .sidecar-build/subread.zip https://downloads.sourceforge.net/project/subread/subread-2.1.1/subread-2.1.1-Windows-x86_64.zip
+          git clone https://github.com/pachterlab/kallisto.git .sidecar-build/src/kallisto
+          git -C .sidecar-build/src/kallisto checkout --detach 4e9f29cf3b021260415430c057a22469ca081391
+          test "$(git -C .sidecar-build/src/kallisto rev-parse HEAD)" = 4e9f29cf3b021260415430c057a22469ca081391
+          curl -L --fail --retry 5 --retry-all-errors --connect-timeout 30 -o .sidecar-build/subread.zip https://downloads.sourceforge.net/project/subread/subread-2.1.1/subread-2.1.1-Windows-x86_64.zip
           echo "6392d7c66831cdd767e58251892a79a51b6fab8ed0ba9671ad5e85ff1ab01eaa  .sidecar-build/subread-source.tar.gz" > .sidecar-build/subread-source.sha256
-          curl -L --fail -o .sidecar-build/subread-source.tar.gz https://downloads.sourceforge.net/project/subread/subread-2.1.1/subread-2.1.1-source.tar.gz
+          curl -L --fail --retry 5 --retry-all-errors --connect-timeout 30 -o .sidecar-build/subread-source.tar.gz https://downloads.sourceforge.net/project/subread/subread-2.1.1/subread-2.1.1-source.tar.gz
           sha256sum --check .sidecar-build/subread-source.sha256
-      - name: Build fastp, HISAT2, and script-free HISAT2 launchers
+      - name: Build fastp, Kallisto, HISAT2, and script-free HISAT2 launchers
         run: |
           make -C .sidecar-build/src/fastp -j2 static
           cp .sidecar-build/src/fastp/fastp .sidecar-build/out/fastp.exe
+          bash desktop/scripts/prepare-kallisto-native-build.sh .sidecar-build/src/kallisto
+          bash desktop/scripts/prepare-kallisto-windows.sh .sidecar-build/src/kallisto
+          cmake -S .sidecar-build/src/kallisto -B .sidecar-build/build/kallisto -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DUSE_HDF5=OFF \
+            -DUSE_BAM=OFF \
+            -DZLIBNG=ON \
+            -DLINK=static \
+            -DCMAKE_CXX_FLAGS='-static-libgcc -static-libstdc++' \
+            -DCMAKE_EXE_LINKER_FLAGS='-static -static-libgcc -static-libstdc++'
+          cmake --build .sidecar-build/build/kallisto --target zlib-ng --parallel 2
+          cmake --build .sidecar-build/build/kallisto --target bifrost --parallel 2
+          cmake --build .sidecar-build/build/kallisto --parallel 2
+          cp .sidecar-build/build/kallisto/src/kallisto.exe .sidecar-build/out/kallisto.exe
           make -C .sidecar-build/src/hisat2 -j2 CXX='g++ -static -static-libgcc -static-libstdc++' hisat2-align-s hisat2-align-l hisat2-build-s hisat2-build-l
           cp .sidecar-build/src/hisat2/hisat2-align-s .sidecar-build/out/hisat2-align-s.exe
           cp .sidecar-build/src/hisat2/hisat2-align-l .sidecar-build/out/hisat2-align-l.exe
@@ -60,6 +83,9 @@ jobs:
           unzip -q .sidecar-build/subread.zip -d .sidecar-build/subread
           cp .sidecar-build/subread/subread-2.1.1-Windows-x86_64/bin/featureCounts.exe .sidecar-build/out/featureCounts.exe
           cp tools/fastp/licenses/fastp-MIT.txt .sidecar-build/licenses/fastp-MIT.txt
+          cp .sidecar-build/src/kallisto/license.txt .sidecar-build/licenses/kallisto-BSD-2-Clause.txt
+          cp .sidecar-build/src/kallisto/ext/bifrost/LICENSE .sidecar-build/licenses/Bifrost-BSD-2-Clause.txt
+          cp .sidecar-build/src/kallisto/ext/zlib-ng/LICENSE.md .sidecar-build/licenses/zlib-ng-zlib.txt
           cp tools/hisat2/licenses/HISAT2-GPL-3.0.txt .sidecar-build/licenses/HISAT2-GPL-3.0.txt
           cp tools/featurecounts/licenses/Subread-GPL-3.0.txt .sidecar-build/licenses/Subread-GPL-3.0.txt
           # These executables are distributed without MSYS2 runtime DLLs. This
@@ -99,8 +125,9 @@ jobs:
               exit 1
             fi
             joined_license_files="$(IFS=';'; echo "${license_files[*]}")"
-            if [ "$package" = mingw-w64-ucrt-x86_64-gcc-libs ]; then
-              linked_into='Fastp;Hisat2;Hisat2Build'
+            if [ "$package" = mingw-w64-ucrt-x86_64-gcc-libs ] || \
+               [ "$package" = mingw-w64-ucrt-x86_64-libwinpthread ]; then
+              linked_into='Fastp;Kallisto;Hisat2;Hisat2Build'
             else
               linked_into='Fastp'
             fi
@@ -127,9 +154,25 @@ jobs:
             Write-Host $versionOutput
           }
           Assert-NativeVersion .\.sidecar-build\out\fastp.exe @('--version') '0.23.4'
+          Assert-NativeVersion .\.sidecar-build\out\kallisto.exe @('version') '0.52.0'
           Assert-NativeVersion .\.sidecar-build\out\hisat2.exe @('--version') '2.2.3'
           Assert-NativeVersion .\.sidecar-build\out\hisat2-build.exe @('--version') '2.2.3'
           Assert-NativeVersion .\.sidecar-build\out\featureCounts.exe @('-v') '2.1.1'
+          New-Item -ItemType Directory -Force .sidecar-build\kallisto-regression | Out-Null
+          & .\.sidecar-build\out\kallisto.exe index -i .sidecar-build\kallisto-regression\transcripts.idx test-data\transcripts.fa
+          if ($LASTEXITCODE -ne 0) { throw "Kallisto index regression failed with $LASTEXITCODE" }
+          & .\.sidecar-build\out\kallisto.exe quant `
+            -i .sidecar-build\kallisto-regression\transcripts.idx `
+            -o .sidecar-build\kallisto-regression\output `
+            -t 1 `
+            --plaintext `
+            test-data\reads_R1.fastq `
+            test-data\reads_R2.fastq
+          if ($LASTEXITCODE -ne 0) { throw "Kallisto quant regression failed with $LASTEXITCODE" }
+          $expectedAbundance = (Get-Content test-data\golden\abundance.tsv -Raw) -replace "`r`n", "`n"
+          $actualAbundance = (Get-Content .sidecar-build\kallisto-regression\output\abundance.tsv -Raw) -replace "`r`n", "`n"
+          if ($actualAbundance -cne $expectedAbundance) { throw 'Native Kallisto abundance.tsv differs from the 0.52.0 golden output.' }
+          if (-not (Test-Path .sidecar-build\kallisto-regression\output\run_info.json -PathType Leaf)) { throw 'Native Kallisto run_info.json is missing.' }
           Copy-Item .sidecar-build\licenses -Destination .sidecar-build\out\licenses -Recurse
           .\desktop\scripts\package-windows-sidecars.ps1 -InputDirectory .sidecar-build\out -OutputDirectory .sidecar-build\package -StaticComponentsPath .sidecar-build\static-components.tsv
           Copy-Item .sidecar-build\licenses -Destination .sidecar-build\package\licenses -Recurse
@@ -146,6 +189,8 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           Copy-Item .sidecar-build\package\* -Destination desktop\src-tauri\binaries -Recurse -Force
+          node --check desktop\frontend\app.js
+          if ($LASTEXITCODE -ne 0) { throw "Desktop frontend syntax check failed with $LASTEXITCODE" }
           cargo fmt --manifest-path desktop\src-tauri\Cargo.toml --all -- --check
           if ($LASTEXITCODE -ne 0) { throw "Rust formatting check failed with $LASTEXITCODE" }
           cargo test --manifest-path desktop\src-tauri\Cargo.toml
@@ -154,17 +199,46 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Tauri bundled-sidecar integration test failed with $LASTEXITCODE" }
           cargo build --manifest-path desktop\src-tauri\Cargo.toml --features desktop
           if ($LASTEXITCODE -ne 0) { throw "Tauri desktop-feature build failed with $LASTEXITCODE" }
+      - name: Build unsigned Windows NSIS installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo install tauri-cli --version 2.11.4 --locked
+          if ($LASTEXITCODE -ne 0) { throw "tauri-cli installation failed with $LASTEXITCODE" }
+          Push-Location desktop\src-tauri
+          try {
+            cargo tauri build --features desktop --config tauri.windows.conf.json
+            if ($LASTEXITCODE -ne 0) { throw "Unsigned NSIS build failed with $LASTEXITCODE" }
+          } finally {
+            Pop-Location
+          }
+          $installers = @(Get-ChildItem desktop\src-tauri\target\release\bundle\nsis -Filter '*.exe' -File)
+          if ($installers.Count -eq 0) { throw 'No NSIS installer was generated.' }
+          $installers | ForEach-Object {
+            "$( (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() )  $($_.Name)"
+          } | Set-Content .sidecar-build\WINDOWS_INSTALLER_SHA256SUMS -Encoding utf8NoBOM
+      - uses: actions/upload-artifact@v7
+        with:
+          name: rna-seq-local-unsigned-installer-windows-x64
+          path: |
+            desktop/src-tauri/target/release/bundle/nsis/*.exe
+            .sidecar-build/WINDOWS_INSTALLER_SHA256SUMS
+          if-no-files-found: error
       - name: Archive corresponding source and build evidence
         run: |
           git -C .sidecar-build/src/fastp archive --format=tar.gz --prefix=fastp-v0.23.4/ HEAD > .sidecar-build/fastp-v0.23.4-source.tar.gz
+          git -C .sidecar-build/src/kallisto archive --format=tar.gz --prefix=kallisto-v0.52.0/ HEAD > .sidecar-build/kallisto-v0.52.0-source.tar.gz
+          cp .sidecar-build/src/kallisto/kallisto-windows-x64.patch .sidecar-build/kallisto-windows-x64.patch
           git -C .sidecar-build/src/hisat2 archive --format=tar.gz --prefix=hisat2-v2.2.3/ HEAD > .sidecar-build/hisat2-v2.2.3-source.tar.gz
-          sha256sum .sidecar-build/*.tar.gz > .sidecar-build/CORRESPONDING_SOURCE_SHA256SUMS
+          sha256sum .sidecar-build/*.tar.gz .sidecar-build/kallisto-windows-x64.patch > .sidecar-build/CORRESPONDING_SOURCE_SHA256SUMS
       - name: Verify artifact payloads
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $requiredFiles = @(
             '.sidecar-build/fastp-v0.23.4-source.tar.gz',
+            '.sidecar-build/kallisto-v0.52.0-source.tar.gz',
+            '.sidecar-build/kallisto-windows-x64.patch',
             '.sidecar-build/hisat2-v2.2.3-source.tar.gz',
             '.sidecar-build/subread-source.tar.gz',
             '.sidecar-build/CORRESPONDING_SOURCE_SHA256SUMS'
@@ -189,6 +263,8 @@ jobs:
           name: desktop-sidecars-windows-x64-corresponding-source
           path: |
             .sidecar-build/fastp-v0.23.4-source.tar.gz
+            .sidecar-build/kallisto-v0.52.0-source.tar.gz
+            .sidecar-build/kallisto-windows-x64.patch
             .sidecar-build/hisat2-v2.2.3-source.tar.gz
             .sidecar-build/subread-source.tar.gz
             .sidecar-build/CORRESPONDING_SOURCE_SHA256SUMS
