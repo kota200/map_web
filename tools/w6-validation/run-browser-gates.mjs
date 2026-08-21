@@ -8,6 +8,13 @@ function option(name, fallback) {
   return index >= 0 && cli[index + 1] ? cli[index + 1] : fallback;
 }
 
+function describeError(error) {
+  const name = error?.name || 'Error';
+  const message = String(error?.message || error);
+  const stack = typeof error?.stack === 'string' ? error.stack : '';
+  return stack.includes(message) ? stack : `${name}: ${message}${stack ? `\n${stack}` : ''}`;
+}
+
 const browserName = option('--browser', 'chromium');
 const browserType = { chromium, firefox, webkit }[browserName];
 if (!browserType) throw new Error(`Unknown browser: ${browserName}`);
@@ -75,7 +82,7 @@ try {
       if (gateReport.state !== 'passed') throw new Error(`${gate.id} reported failure.`);
     } catch (error) {
       gateReport.state = 'failed';
-      gateReport.error = String(error?.stack || error);
+      gateReport.error = describeError(error);
       await page.screenshot({ path: resolve(outputDirectory, `${browserName}-${gate.id}.png`), fullPage: true }).catch(() => {});
     } finally {
       gateReport.elapsed_ms = Date.now() - started;

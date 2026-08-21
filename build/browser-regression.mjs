@@ -10,6 +10,13 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function describeError(error) {
+  const name = error?.name || 'Error';
+  const message = String(error?.message || error);
+  const stack = typeof error?.stack === 'string' ? error.stack : '';
+  return stack.includes(message) ? stack : `${name}: ${message}${stack ? `\n${stack}` : ''}`;
+}
+
 function normalizeText(text) {
   return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 }
@@ -193,7 +200,7 @@ try {
   output.textContent = JSON.stringify(result, null, 2);
   document.documentElement.dataset.regression = 'passed';
 } catch (error) {
-  const result = { ok: false, error: String(error?.stack || error) };
+  const result = { ok: false, error: describeError(error) };
   window.__regressionResult = result;
   status.textContent = 'FAIL — browser regression did not match the archived baseline.';
   status.className = 'callout-error';
