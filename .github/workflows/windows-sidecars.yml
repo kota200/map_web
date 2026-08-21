@@ -58,6 +58,7 @@ jobs:
           bash desktop/scripts/prepare-kallisto-windows.sh .sidecar-build/src/kallisto
           cmake -S .sidecar-build/src/kallisto -B .sidecar-build/build/kallisto -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DUSE_HDF5=OFF \
             -DUSE_BAM=OFF \
             -DZLIBNG=ON \

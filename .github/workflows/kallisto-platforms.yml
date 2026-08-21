@@ -52,6 +52,7 @@ jobs:
           set -euo pipefail
           cmake -S .sidecar-build/kallisto -B .sidecar-build/build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DUSE_HDF5=OFF \
             -DUSE_BAM=OFF \
             -DZLIBNG=ON \
