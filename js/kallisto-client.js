@@ -35,7 +35,7 @@ export class KallistoRunner {
       return Promise.reject(new Error('A kallisto command is already running.'));
     }
 
-    const worker = new Worker(new URL('./kallisto-worker.js?v=20260820-w6', import.meta.url));
+    const worker = new Worker(new URL('./kallisto-worker.js?v=20260821-w6-cross-browser', import.meta.url));
     this.worker = worker;
 
     return new Promise((resolve, reject) => {
@@ -78,7 +78,7 @@ export class KallistoRunner {
       return Promise.reject(new Error('A kallisto command is already running.'));
     }
 
-    const worker = new Worker(new URL('./kallisto-worker.js?v=20260820-w6', import.meta.url));
+    const worker = new Worker(new URL('./kallisto-worker.js?v=20260821-w6-cross-browser', import.meta.url));
     this.worker = worker;
 
     return new Promise((resolve, reject) => {

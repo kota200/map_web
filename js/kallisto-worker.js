@@ -2,7 +2,14 @@ function post(type, data = {}) {
   self.postMessage({ type, ...data });
 }
 
-const RUNTIME_CACHE_VERSION = '20260820-w6';
+function describeError(error) {
+  const name = error?.name || 'Error';
+  const message = String(error?.message || error);
+  const stack = typeof error?.stack === 'string' ? error.stack : '';
+  return stack.includes(message) ? stack : `${name}: ${message}${stack ? `\n${stack}` : ''}`;
+}
+
+const RUNTIME_CACHE_VERSION = '20260821-w6-cross-browser';
 const KALLISTO_WASM_MAXIMUM_MEMORY_BYTES = 3 * 1024 * 1024 * 1024;
 
 function versionedUrl(path, base) {
@@ -601,6 +608,6 @@ self.onmessage = async (event) => {
       await runKallistoBatch(message.payload || {});
     }
   } catch (error) {
-    post('error', { message: error?.stack || String(error) });
+    post('error', { message: describeError(error) });
   }
 };

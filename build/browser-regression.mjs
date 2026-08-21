@@ -1,4 +1,4 @@
-import { KallistoRunner } from '../js/kallisto-client.js?v=20260820-w6';
+import { KallistoRunner } from '../js/kallisto-client.js?v=20260821-w6-cross-browser';
 import { MatrixBuilder } from '../js/batch-results.mjs';
 
 const status = document.getElementById('regressionStatus');

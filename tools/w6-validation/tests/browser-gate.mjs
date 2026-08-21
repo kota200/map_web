@@ -1,4 +1,4 @@
-import { KallistoRunner } from '../../../js/kallisto-client.js?v=20260820-w6';
+import { KallistoRunner } from '../../../js/kallisto-client.js?v=20260821-w6-cross-browser';
 import { loadConfiguredCatalog } from '../../../js/index-catalog.mjs';
 import { W4IndexCacheClient } from '../../w4-catalog/runtime/cache-client.mjs';
 import { W3StorageClient } from '../../w3-storage/runtime/storage-client.mjs';

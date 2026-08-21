@@ -53,6 +53,7 @@ jobs:
         env:
           W6_REQUIRE_REPRESENTATIVE_FILES: '0'
         run: |
+          python3 build/patch_kallisto_for_wasm.py vendor/kallisto
           node build/check-static.mjs
           node build/test-batch-results.mjs
           node build/test-worker-lifecycle.mjs

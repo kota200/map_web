@@ -1,4 +1,4 @@
-import { KallistoRunner } from './kallisto-client.js?v=20260820-w6';
+import { KallistoRunner } from './kallisto-client.js?v=20260821-w6-cross-browser';
 import { MatrixBuilder } from './batch-results.mjs';
 import { formatCapabilityBytes, inspectBrowserCapabilities } from './browser-capabilities.mjs?v=20260820-w6';
 import { buildFastpArguments } from '../tools/fastp/runtime/fastp-runner.mjs';
