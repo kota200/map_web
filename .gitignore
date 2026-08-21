@@ -2,7 +2,7 @@
 .w2-cache/
 .wasm-build/
 .w6-ci/
-build/
+build/__pycache__/
 desktop/src-tauri/target/
 # Reproducible HISAT2 validation output (built from the checked-in fixture)
 /tools/w6-validation/representative-hisat2/index/

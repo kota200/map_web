@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' data: blob:; style-src 'self';">
+  <title>kallisto Web browser regression</title>
+  <link rel="stylesheet" href="../css/kallisto-app.css">
+</head>
+<body class="help-page">
+  <main class="app-shell help-manual">
+    <section class="step-card">
+      <div class="step-head"><h1>kallisto Web browser regression</h1></div>
+      <p id="regressionStatus" role="status">Running the archived tiny fixture…</p>
+      <pre id="regressionOutput" class="analysis-log"></pre>
+    </section>
+  </main>
+  <script type="module" src="./browser-regression.mjs?v=20260820-w6"></script>
+</body>
+</html>
