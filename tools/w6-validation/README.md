@@ -30,7 +30,9 @@ The gate requires cross-origin isolation and OPFS. It verifies Kallisto fastp OF
 Firefox are required jobs. The WebKit job is diagnostic and may fail while
 Safari remains unmeasured: Playwright WebKit on Linux is not evidence from
 Apple Safari on macOS. Each job uploads a JSON report, server log, and a failure
-screenshot when applicable.
+screenshot when applicable. Each gate starts a fresh browser process so a
+terminated Worker or Wasm runtime from an earlier gate cannot contaminate the
+next measurement.
 
 The accepted cross-browser automation evidence is Actions run
 [`32458539850`](https://github.com/kota200/map_web/actions/runs/32458539850)

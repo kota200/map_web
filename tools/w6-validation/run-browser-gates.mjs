@@ -48,18 +48,19 @@ const gates = [
 ];
 
 await mkdir(outputDirectory, { recursive: true });
-const browser = await browserType.launch({ headless: true });
 const report = {
   schema_version: 1,
   generated_at: new Date().toISOString(),
   requested_browser: browserName,
-  browser_version: browser.version(),
+  browser_version: null,
   base_url: baseUrl.href,
   gates: [],
 };
 
-try {
-  for (const gate of gates) {
+for (const gate of gates) {
+  const browser = await browserType.launch({ headless: true });
+  try {
+    report.browser_version ||= browser.version();
     const context = await browser.newContext();
     const page = await context.newPage();
     const logs = [];
@@ -89,9 +90,9 @@ try {
       await context.close();
       await writeFile(resolve(outputDirectory, `${browserName}.json`), `${JSON.stringify(report, null, 2)}\n`);
     }
+  } finally {
+    await browser.close();
   }
-} finally {
-  await browser.close();
 }
 
 const failures = report.gates.filter((gate) => gate.state !== 'passed');
