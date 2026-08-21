@@ -1,0 +1,173 @@
+name: Build native Kallisto platform sidecars
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/kallisto-platforms.yml'
+      - 'desktop/scripts/package-kallisto-sidecar.ps1'
+      - 'desktop/scripts/prepare-kallisto-native-build.sh'
+      - 'desktop/frontend/**'
+      - 'desktop/src-tauri/**'
+      - 'test-data/transcripts.fa'
+      - 'test-data/reads_R1.fastq'
+      - 'test-data/reads_R2.fastq'
+      - 'test-data/golden/abundance.tsv'
+      - 'tools/kallisto/source.lock.json'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - runner: macos-15
+            target: aarch64-apple-darwin
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: >-
+          sudo apt-get update && sudo apt-get install -y
+          build-essential cmake ninja-build libwebkit2gtk-4.1-dev libssl-dev
+          libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev
+          patchelf libfuse2 file
+      - name: Prepare pinned source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone https://github.com/pachterlab/kallisto.git .sidecar-build/kallisto
+          git -C .sidecar-build/kallisto checkout --detach 4e9f29cf3b021260415430c057a22469ca081391
+          test "$(git -C .sidecar-build/kallisto rev-parse HEAD)" = 4e9f29cf3b021260415430c057a22469ca081391
+          bash desktop/scripts/prepare-kallisto-native-build.sh .sidecar-build/kallisto
+      - name: Build portable Kallisto 0.52.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S .sidecar-build/kallisto -B .sidecar-build/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DUSE_HDF5=OFF \
+            -DUSE_BAM=OFF \
+            -DZLIBNG=ON \
+            -DENABLE_AVX2=OFF \
+            -DCOMPILATION_ARCH=OFF
+          cmake --build .sidecar-build/build --target zlib-ng --parallel 2
+          cmake --build .sidecar-build/build --target bifrost --parallel 2
+          cmake --build .sidecar-build/build --parallel 2
+          .sidecar-build/build/src/kallisto version | tee .sidecar-build/kallisto-version.txt
+          grep -F '0.52.0' .sidecar-build/kallisto-version.txt
+          actual_arch="$(uname -m)"
+          case '${{ matrix.target }}' in
+            aarch64-*) test "$actual_arch" = arm64 ;;
+            x86_64-apple-*) test "$actual_arch" = x86_64 ;;
+            x86_64-unknown-*) test "$actual_arch" = x86_64 ;;
+          esac
+      - name: Native scientific regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .sidecar-build/regression
+          .sidecar-build/build/src/kallisto index -i .sidecar-build/regression/transcripts.idx test-data/transcripts.fa
+          .sidecar-build/build/src/kallisto quant \
+            -i .sidecar-build/regression/transcripts.idx \
+            -o .sidecar-build/regression/output \
+            -t 1 \
+            --plaintext \
+            test-data/reads_R1.fastq \
+            test-data/reads_R2.fastq
+          diff -u test-data/golden/abundance.tsv .sidecar-build/regression/output/abundance.tsv
+          test -s .sidecar-build/regression/output/run_info.json
+      - name: Package manifest, checksums, provenance, and licenses
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          ./desktop/scripts/package-kallisto-sidecar.ps1 `
+            -Executable .sidecar-build/build/src/kallisto `
+            -SourceDirectory .sidecar-build/kallisto `
+            -Target '${{ matrix.target }}' `
+             -OutputDirectory '.sidecar-build/package' `
+             -BuildProvenance '.github/workflows/kallisto-platforms.yml'
+      - name: Preserve executable permissions in sidecar archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod 755 ".sidecar-build/package/kallisto" ".sidecar-build/package/kallisto-${{ matrix.target }}"
+          tar -C .sidecar-build/package -czf ".sidecar-build/kallisto-sidecar-${{ matrix.target }}.tar.gz" .
+          shasum -a 256 ".sidecar-build/kallisto-sidecar-${{ matrix.target }}.tar.gz" > ".sidecar-build/KALLISTO_SIDECAR_${{ matrix.target }}_SHA256SUMS"
+      - name: Archive corresponding source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C .sidecar-build/kallisto archive --format=tar.gz --prefix=kallisto-v0.52.0/ HEAD > .sidecar-build/kallisto-v0.52.0-source.tar.gz
+          cp .sidecar-build/kallisto/kallisto-native-cmake.patch .sidecar-build/kallisto-native-cmake.patch
+          shasum -a 256 .sidecar-build/kallisto-v0.52.0-source.tar.gz .sidecar-build/kallisto-native-cmake.patch > .sidecar-build/KALLISTO_SOURCE_SHA256SUMS
+      - name: Build unsigned platform installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Copy-Item .sidecar-build/package/* -Destination desktop/src-tauri/binaries -Recurse -Force
+          node --check desktop/frontend/app.js
+          if ($LASTEXITCODE -ne 0) { throw "Desktop frontend syntax check failed with $LASTEXITCODE" }
+          cargo fmt --manifest-path desktop/src-tauri/Cargo.toml --all -- --check
+          if ($LASTEXITCODE -ne 0) { throw "Rust formatting check failed with $LASTEXITCODE" }
+          cargo test --manifest-path desktop/src-tauri/Cargo.toml
+          if ($LASTEXITCODE -ne 0) { throw "Cross-platform Rust core tests failed with $LASTEXITCODE" }
+          cargo install tauri-cli --version 2.11.4 --locked
+          if ($LASTEXITCODE -ne 0) { throw "tauri-cli installation failed with $LASTEXITCODE" }
+          Push-Location desktop/src-tauri
+          try {
+            cargo tauri icon icons/app-icon.svg
+            if ($LASTEXITCODE -ne 0) { throw "Tauri icon generation failed with $LASTEXITCODE" }
+          } finally {
+            Pop-Location
+          }
+          cargo test --manifest-path desktop/src-tauri/Cargo.toml --features desktop --test bundled_sidecars -- --nocapture
+          if ($LASTEXITCODE -ne 0) { throw "Tauri Kallisto sidecar launch failed with $LASTEXITCODE" }
+          Push-Location desktop/src-tauri
+          try {
+            if ('${{ runner.os }}' -eq 'Linux') {
+              cargo tauri build --features desktop --config tauri.kallisto-only.conf.json --bundles deb,appimage
+            } else {
+              cargo tauri build --features desktop --config tauri.kallisto-only.conf.json --bundles dmg
+            }
+            if ($LASTEXITCODE -ne 0) { throw "Unsigned Tauri bundle build failed with $LASTEXITCODE" }
+          } finally {
+            Pop-Location
+          }
+          $bundles = @(Get-ChildItem desktop/src-tauri/target/release/bundle -File -Recurse)
+          if ($bundles.Count -eq 0) { throw 'No installer bundle was generated.' }
+          $bundles | ForEach-Object {
+            "$( (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() )  $($_.Name)"
+          } | Set-Content .sidecar-build/INSTALLER_SHA256SUMS -Encoding utf8NoBOM
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kallisto-sidecar-${{ matrix.target }}
+          path: |
+            .sidecar-build/package
+            .sidecar-build/kallisto-sidecar-${{ matrix.target }}.tar.gz
+            .sidecar-build/KALLISTO_SIDECAR_${{ matrix.target }}_SHA256SUMS
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: rna-seq-local-unsigned-installer-${{ matrix.target }}
+          path: |
+            desktop/src-tauri/target/release/bundle/**
+            .sidecar-build/INSTALLER_SHA256SUMS
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kallisto-source-${{ matrix.target }}
+          path: |
+            .sidecar-build/kallisto-v0.52.0-source.tar.gz
+            .sidecar-build/kallisto-native-cmake.patch
+            .sidecar-build/KALLISTO_SOURCE_SHA256SUMS
+          if-no-files-found: error

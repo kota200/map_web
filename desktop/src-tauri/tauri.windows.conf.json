@@ -1,0 +1,17 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "externalBin": ["binaries/fastp", "binaries/kallisto", "binaries/hisat2", "binaries/hisat2-build", "binaries/featureCounts"],
+    "resources": {
+      "binaries/sidecars.x86_64-pc-windows-msvc.json": "sidecars.x86_64-pc-windows-msvc.json",
+      "binaries/licenses/*": "licenses/",
+      "binaries/hisat2-align-s.exe": "hisat2-align-s.exe",
+      "binaries/hisat2-align-l.exe": "hisat2-align-l.exe",
+      "binaries/hisat2-build-s.exe": "hisat2-build-s.exe",
+      "binaries/hisat2-build-l.exe": "hisat2-build-l.exe"
+    },
+    "icon": ["icons/icon.ico"]
+  }
+}

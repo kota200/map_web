@@ -3,6 +3,7 @@ use rna_seq_local_desktop::{
         inspect_existing_index as inspect_index, plan_hisat2_index_build as create_index_plan,
         ExistingIndexRequest, IndexBuildPlan, IndexBuildRequest, IndexInspection,
     },
+    kallisto::{plan_kallisto, KallistoRequest, KallistoRunPlan},
     plan_hisat2,
     sidecars::{
         sidecar_statuses, verify_bundled_sidecar_versions, ProcessSupervisor, RunStatus,
@@ -21,12 +22,30 @@ struct AppState {
 }
 
 fn load_state(sidecar_root: PathBuf, manifest_path: PathBuf) -> Result<AppState, String> {
-    let manifest = fs::read_to_string(&manifest_path)
+    let manifest: SidecarManifest = fs::read_to_string(&manifest_path)
         .map_err(|error| format!("sidecar manifest is unavailable: {error}"))
         .and_then(|text| {
             serde_json::from_str(&text)
                 .map_err(|error| format!("sidecar manifest is invalid: {error}"))
         })?;
+    if manifest.target != env!("DESKTOP_TARGET") {
+        return Err(format!(
+            "sidecar manifest target {} does not match application target {}",
+            manifest.target,
+            env!("DESKTOP_TARGET")
+        ));
+    }
+    for (index, record) in manifest.sidecars.iter().enumerate() {
+        if manifest.sidecars[index + 1..]
+            .iter()
+            .any(|candidate| candidate.tool == record.tool)
+        {
+            return Err(format!(
+                "sidecar manifest contains duplicate registration for {:?}",
+                record.tool
+            ));
+        }
+    }
     Ok(AppState {
         sidecar_root,
         manifest,
@@ -37,6 +56,11 @@ fn load_state(sidecar_root: PathBuf, manifest_path: PathBuf) -> Result<AppState,
 #[tauri::command]
 fn plan_hisat2_run(request: Hisat2Request) -> Result<rna_seq_local_desktop::RunPlan, String> {
     plan_hisat2(&request).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn plan_kallisto_run(request: KallistoRequest) -> Result<KallistoRunPlan, String> {
+    plan_kallisto(&request).map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -96,6 +120,26 @@ fn start_hisat2_run(
 }
 
 #[tauri::command]
+fn start_kallisto_run(
+    request: KallistoRequest,
+    state: State<'_, AppState>,
+    app: tauri::AppHandle,
+) -> Result<RunStatus, String> {
+    let plan = plan_kallisto(&request).map_err(|error| error.to_string())?;
+    state
+        .supervisor
+        .start_kallisto_with_reporter(
+            state.sidecar_root.clone(),
+            state.manifest.clone(),
+            plan,
+            Arc::new(move |event| {
+                let _ = app.emit("native-log", event);
+            }),
+        )
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn get_run_status(run_id: Uuid, state: State<'_, AppState>) -> Option<RunStatus> {
     state.supervisor.status(run_id)
 }
@@ -127,8 +171,8 @@ fn cleanup_orphan_temporary_directories(
 fn main() {
     if std::env::args_os().any(|argument| argument == "--verify-bundled-sidecars") {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("binaries");
-        let state = load_state(root.clone(), root.join("sidecars.windows-x86_64.json"))
-            .unwrap_or_else(|error| {
+        let state =
+            load_state(root.clone(), root.join(sidecar_manifest_name())).unwrap_or_else(|error| {
                 eprintln!("{error}");
                 std::process::exit(1);
             });
@@ -146,7 +190,7 @@ fn main() {
         .setup(|app| {
             let (sidecar_root, manifest_path) = if cfg!(debug_assertions) {
                 let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("binaries");
-                (root.clone(), root.join("sidecars.windows-x86_64.json"))
+                (root.clone(), root.join(sidecar_manifest_name()))
             } else {
                 let sidecars = app
                     .path()
@@ -156,7 +200,7 @@ fn main() {
                     .path()
                     .resource_dir()
                     .unwrap_or_else(|error| panic!("could not locate bundled resources: {error}"))
-                    .join("sidecars.windows-x86_64.json");
+                    .join(sidecar_manifest_name());
                 (sidecars, manifest)
             };
             app.manage(
@@ -166,11 +210,13 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             plan_hisat2_run,
+            plan_kallisto_run,
             inspect_hisat2_index,
             plan_hisat2_index_build,
             start_hisat2_index_build,
             verify_sidecars,
             start_hisat2_run,
+            start_kallisto_run,
             get_run_status,
             cancel_run,
             find_orphan_temporary_directories,
@@ -178,4 +224,8 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Tauri desktop app");
+}
+
+fn sidecar_manifest_name() -> String {
+    format!("sidecars.{}.json", env!("DESKTOP_TARGET"))
 }

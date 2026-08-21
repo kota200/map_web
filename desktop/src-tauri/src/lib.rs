@@ -3,6 +3,7 @@ use std::path::{Component, Path, PathBuf};
 use thiserror::Error;
 use uuid::Uuid;
 pub mod index;
+pub mod kallisto;
 pub mod results;
 pub mod sidecars;
 pub mod temporary;
@@ -200,15 +201,16 @@ pub fn plan_hisat2(request: &Hisat2Request) -> Result<RunPlan, DesktopError> {
 mod tests {
     use super::*;
     fn request() -> Hisat2Request {
+        let root = std::env::temp_dir().join("rna-seq-desktop-plan-test");
         Hisat2Request {
             sample: NativeSample {
                 name: "日本語 sample".into(),
-                r1: PathBuf::from(r"C:\data\R1.fq.gz"),
-                r2: Some(PathBuf::from(r"C:\data\R2.fq.gz")),
+                r1: root.join("data/R1.fq.gz"),
+                r2: Some(root.join("data/R2.fq.gz")),
             },
-            index_prefix: PathBuf::from(r"C:\refs\arabidopsis"),
-            annotation: PathBuf::from(r"C:\refs\annotation.gtf"),
-            output_dir: PathBuf::from(r"C:\runs\結果"),
+            index_prefix: root.join("refs/arabidopsis"),
+            annotation: root.join("refs/annotation.gtf"),
+            output_dir: root.join("runs/結果"),
             threads: 4,
             run_fastp: false,
             strandedness: 0,
@@ -227,7 +229,7 @@ mod tests {
     #[test]
     fn rejects_traversal() {
         let mut r = request();
-        r.annotation = PathBuf::from(r"C:\refs\..\bad.gtf");
+        r.annotation = std::env::temp_dir().join("refs/../bad.gtf");
         assert!(matches!(plan_hisat2(&r), Err(DesktopError::UnsafePath(_))));
     }
     #[test]

@@ -1,10 +1,16 @@
 # Windows x64 sidecar inventory
 
-Only files recorded in `sidecars.windows-x86_64.json` may execute. Rust checks
-the SHA-256 of every executable, HISAT2 helper, and tool license before launch.
+Only files recorded in `sidecars.<Rust target>.json` may execute. Rust rejects a
+manifest whose target differs from the compiled application, then checks the
+SHA-256 of every executable, support file, component license, and tool license
+before launch.
 The Tauri build accepts only the target-suffixed main executables declared in
 `tauri.conf.json`; the verified HISAT2 dispatchers select the registered small
 or large index helpers without Python, Perl, PATH, WSL, or a shell.
+Packaging also stages a runtime-name copy of each executable. The manifest
+records that runtime name because Tauri removes the target suffix when it
+installs an external binary; keeping both names lets CI verify the same
+manifest before bundling and lets the installed application verify it again.
 
 ## Registered binaries
 
@@ -23,13 +29,14 @@ and libdeflate. There are no bundled MSYS2 DLL files.
 
 ## Verification evidence
 
-GitHub Actions run
-[`32385204268`](https://github.com/kota200/map_web/actions/runs/32385204268)
+Merged-main GitHub Actions run
+[`32437427175`, attempt 2](https://github.com/kota200/map_web/actions/runs/32437427175)
 completed on 2026-08-21 (JST). It built from fixed source revisions, rejected
-dynamic MSYS2 linkage, checked all four version commands and exit codes, copied
-the artifact into the Tauri binary directory, launched all four main sidecars
-from the compiled Tauri application, ran the Rust test suite, and completed a
-`desktop` feature build.
+dynamic MSYS2 linkage, checked all four D1 version commands and exit codes,
+copied the artifact into the Tauri binary directory, launched all four D1
+sidecars from the compiled Tauri application, ran the Rust test suite, and
+completed a `desktop` feature build. Kallisto is added to this inventory only
+after the D2 native regression and five-sidecar launch gate pass.
 
 Matching source archives and checksums are committed under
 `desktop/corresponding-source/windows-x64`. HISAT2 and Subread are
