@@ -41,4 +41,12 @@ bits survive GitHub artifact download; the archive receives its own SHA-256.
 
 The authoritative merged D1 evidence is GitHub Actions run
 [`32437427175`, attempt 2](https://github.com/kota200/map_web/actions/runs/32437427175).
-See `../docs/DESKTOP_PIPELINE.md` for D1 acceptance and the current D2 gate.
+D2 engineering acceptance passed at commit
+`cbe1adff0a0b5b2af1b4b9dc730412648925c1de` in the
+[Windows x64 run](https://github.com/kota200/map_web/actions/runs/32446706845)
+and the
+[Linux x64 / macOS arm64 / macOS x64 run](https://github.com/kota200/map_web/actions/runs/32446706737).
+Those runs produced target-specific sidecars, corresponding source, and
+unsigned NSIS, DMG, DEB, and AppImage artifacts. They are not public releases;
+signing, notarization, and release/legal approval remain external blockers. See
+`../docs/DESKTOP_PIPELINE.md` for the acceptance and artifact-review procedure.

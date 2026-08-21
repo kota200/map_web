@@ -1,4 +1,4 @@
-# Desktop Pipeline (D1 complete; D2 in progress)
+# Desktop Pipeline (D1 and D2 engineering acceptance complete)
 
 Status: D1 is complete on Windows x64. The merged `main` acceptance record is
 GitHub Actions run
@@ -6,6 +6,15 @@ GitHub Actions run
 verified production sidecars, real Tauri application launches, Rust tests, and
 the complete `desktop` feature build passed. Attempt 1 failed only because a
 SourceForge mirror timed out; D2 adds bounded retry for those fixed downloads.
+
+D2 passed at commit `cbe1adff0a0b5b2af1b4b9dc730412648925c1de` in
+[Windows run `32446706845`](https://github.com/kota200/map_web/actions/runs/32446706845)
+and
+[cross-platform run `32446706737`](https://github.com/kota200/map_web/actions/runs/32446706737).
+All four target jobs completed their native scientific regression, manifest and
+license packaging, Tauri bundled-sidecar launch, unsigned installer build, and
+artifact upload gates. This is engineering acceptance, not public-release
+approval.
 
 ```text
 shared UI / schemas / scientific calculations
@@ -149,12 +158,46 @@ NSIS installer checksum.
 | `x86_64-apple-darwin` | macOS 15 Intel | version, architecture, index + PE quant, exact abundance | DMG |
 | `x86_64-pc-windows-msvc` | Windows Server 2022 x64 | version, SHA, Tauri launch; native regression is a D2 gate | NSIS |
 
-These are CI test artifacts, not public releases. D2 is not complete until all
-four jobs have actually passed and their generated hashes are reviewed. A public
+These are CI test artifacts, not public releases. All four jobs passed on
+2026-08-21, and each uploaded package contains generated hash inventories for
+review. A public
 macOS download requires Developer ID signing and notarization; a public Windows
 installer requires an approved Authenticode signing identity and protected CI
 secret/key service; Linux publishes separate `.deb` and AppImage formats and
 needs its own signature/repository policy. No signing credentials are committed.
+
+## D2 acceptance and artifact-review procedure
+
+1. Confirm both authoritative runs completed successfully at the same head SHA:
+   `cbe1adff0a0b5b2af1b4b9dc730412648925c1de`.
+2. In `32446706845`, confirm the native Kallisto golden regression, version
+   checks for all five Windows tools, manifest/license packaging, compiled Tauri
+   sidecar integration test, complete `desktop` feature build, and unsigned NSIS
+   step all passed.
+3. In `32446706737`, confirm the three target jobs report the expected runner
+   architecture, exact native `abundance.tsv` regression, Tauri Kallisto launch,
+   and unsigned DMG or DEB/AppImage build.
+4. Download artifacts only on a trusted validation/release machine. Verify
+   `SHA256SUMS`, the target-specific installer checksum file, and the source
+   checksum file before inspecting or executing a binary. On a host whose
+   endpoint policy blocks locally built or unsigned tools, do not whitelist the
+   artifacts merely to repeat CI.
+5. Keep each binary/installer beside its exact source archive, generated patch,
+   checksum inventory, and complete license directory. Do not combine manifests
+   from different Rust targets or strip GPL corresponding-source materials from
+   the full Windows package.
+6. Treat every installer as unsigned CI evidence. A release owner must complete
+   platform signing/notarization, legal review, protected-key handling, and a
+   post-signature installation test before publication.
+
+The successful run exposes these artifact families:
+
+- Windows: `desktop-sidecars-windows-x64`,
+  `desktop-sidecars-windows-x64-corresponding-source`, and
+  `rna-seq-local-unsigned-installer-windows-x64`.
+- Per Linux/macOS target: `kallisto-sidecar-<target>`,
+  `kallisto-source-<target>`, and
+  `rna-seq-local-unsigned-installer-<target>`.
 
 Current packaging guidance is based on the official Tauri documentation:
 <https://v2.tauri.app/distribute/> and
@@ -162,13 +205,13 @@ Current packaging guidance is based on the official Tauri documentation:
 
 ## D2 acceptance checklist
 
-- [ ] Windows x64 native Kallisto build, scientific regression, Tauri launch,
+- [x] Windows x64 native Kallisto build, scientific regression, Tauri launch,
   and unsigned NSIS generation pass in clean CI.
-- [ ] macOS arm64 native Kallisto regression and unsigned DMG generation pass.
-- [ ] macOS x64 native Kallisto regression and unsigned DMG generation pass.
-- [ ] Linux x64 native Kallisto regression plus `.deb` and AppImage generation
+- [x] macOS arm64 native Kallisto regression and unsigned DMG generation pass.
+- [x] macOS x64 native Kallisto regression and unsigned DMG generation pass.
+- [x] Linux x64 native Kallisto regression plus `.deb` and AppImage generation
   pass on the documented compatibility baseline.
-- [ ] Every artifact has a target-specific manifest, exact SHA-256, source
+- [x] Every artifact has a target-specific manifest, exact SHA-256, source
   revision/archive, full license texts, and build provenance.
-- [ ] Signing/notarization remains visibly blocked until real credentials and a
+- [x] Signing/notarization remains visibly blocked until real credentials and a
   release owner are approved; unsigned CI artifacts are never called releasable.

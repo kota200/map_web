@@ -1,6 +1,6 @@
 # Validation Report
 
-Date: 2026-08-17
+Date: 2026-08-21
 
 ## Environment
 
@@ -36,9 +36,19 @@ Golden data:
 
 ## Kallisto native comparison
 
-Not tested. No native kallisto binary was supplied or available. Phase 0 therefore protects the archived browser/Wasm result; it does not claim equivalence to a newly executed native 0.52.0 baseline.
+Phase 0 initially had no native Kallisto executable. Desktop D2 later built
+Kallisto 0.52.0 from pinned commit
+`4e9f29cf3b021260415430c057a22469ca081391` on Windows x64, Linux x64, macOS
+arm64, and macOS x64. Every target built the tiny transcriptome index, ran the
+paired fixture, and matched `test-data/golden/abundance.tsv` exactly while also
+requiring `run_info.json`. This closes the native comparison for the deterministic
+D2 fixture; it does not claim representative cross-platform performance or
+byte-identical native binaries.
 
-Native comparison remains unavailable only for Kallisto 0.52.0. Native fastp 0.23.4, HISAT2 2.2.3, and featureCounts 2.1.1 baselines were built and executed as recorded below. W5 parses the retained native featureCounts baselines and validates gene TPM separately from the upstream native tools.
+Native fastp 0.23.4, HISAT2 2.2.3, and featureCounts 2.1.1 baselines were also
+built and executed as recorded below. W5 parses the retained native
+featureCounts baselines and validates gene TPM separately from the upstream
+native tools.
 
 ## Phase W2 fastp 0.23.4 proof
 
@@ -190,7 +200,7 @@ The tracked instantiation hook captures the shared imported `WebAssembly.Memory`
 
 This proves that this particular multi-GiB Kallisto dataset completes in the tested browser and closes the previously open representative Kallisto Wasm-allocation measurement sub-gate. It does not create a general multi-GiB support promise. The generated index and standard Kallisto outputs remain memory-backed. The earlier 2026-08-18 index was 141,752,090 bytes, 768 bytes larger than the fresh build, while both reported 209,567 graph contigs and 47,602,966 k-mers; byte-for-byte determinism is therefore not claimed for this representative index build.
 
-The example dataset includes `Col-CC_v2_genome.fasta.gz` and `TAIR12_1Feb26.gff3.gz`; both declare the matching `Chr1`–`Chr5` contigs. It still has no exact-version prebuilt HISAT2 index, native expected alignment/featureCounts/TPM output, or approved production catalog/CDN. It therefore cannot yet validate representative HISAT2 biology or hosting. Firefox and Safari also remain unmeasured. W6 is not complete and Desktop Phase D1 must not start.
+The example dataset includes `Col-CC_v2_genome.fasta.gz` and `TAIR12_1Feb26.gff3.gz`; both declare the matching `Chr1`–`Chr5` contigs. It still has no exact-version prebuilt HISAT2 index, native expected alignment/featureCounts/TPM output, or approved production catalog/CDN. It therefore cannot yet validate representative HISAT2 biology or hosting. Firefox and Safari also remain unmeasured. W6 is not complete. Desktop D1/D2 proceeded as separately accepted native engineering work; this does not close the Web W6 release gate.
 
 ## Memory, storage, and runtime
 
@@ -217,7 +227,29 @@ The example dataset includes `Col-CC_v2_genome.fasta.gz` and `TAIR12_1Feb26.gff3
 - Chromium: tiny Kallisto path, isolated fastp/HISAT2/featureCounts proofs, the W3 64 MiB OPFS/file-backed handoff, W4 local catalog/cache, and W5 experimental end-to-end synthetic workflow tested in Chrome 151.
 - Firefox: not tested; Firefox was not installed in the Windows validation environment on 2026-08-20.
 - Safari: not tested; Safari requires a separate macOS validation environment and is unavailable on the current Windows host.
-- Windows/macOS/Linux desktop packages: not built and not tested.
+- Desktop D2 engineering targets: Windows x64, Linux x64, macOS arm64, and
+  macOS x64 native Kallisto sidecars and unsigned installers passed clean CI.
+  This is not a signed/notarized public-support claim.
+
+## Desktop D1 and D2 validation
+
+- D1 Windows x64 acceptance passed on merged `main` in run `32437427175`,
+  attempt 2.
+- D2 Windows x64 passed in run `32446706845`: fixed-source builds, exact tool
+  versions, Kallisto golden regression, manifest/license/source packaging, real
+  bundled-sidecar launch from the compiled Tauri application, complete
+  `desktop` feature build, unsigned NSIS generation, and payload checks all
+  succeeded.
+- D2 Linux x64, macOS arm64, and macOS x64 passed in run `32446706737`: each
+  runner verified its architecture and Kallisto version, matched the native
+  golden output, launched the registered Kallisto sidecar through Tauri, built
+  its unsigned package formats, and uploaded binary/installer/source checksum
+  evidence.
+- Both D2 runs used head SHA
+  `cbe1adff0a0b5b2af1b4b9dc730412648925c1de`. Local Rust and sidecar execution
+  was intentionally not performed on the endpoint-policy-blocked Windows host.
+- Code signing, notarization, legal release approval, protected-key handling,
+  and signed-installer installation tests remain not tested.
 
 ## Post-change stable-product validation
 
@@ -228,4 +260,4 @@ The example dataset includes `Col-CC_v2_genome.fasta.gz` and `TAIR12_1Feb26.gff3
 
 ## W2–W6 scope statement
 
-All three W2 individual-engine acceptances, the measured W3 storage-architecture gate, W4 local hosted-package/cache acceptance, W5 small end-to-end pipeline, and the completed W6 sub-gates above have passed. The product UI keeps fastp OFF by default and enables HISAT2 only as Experimental with a synthetic local catalog warning. One representative multi-GiB Kallisto run completed with measured Wasm linear-memory allocation high water. Production HISAT2 hosting/biology, Firefox, and Safari remain release blockers. Phase W6 Web release validation is in progress; no desktop release exists.
+All three W2 individual-engine acceptances, the measured W3 storage-architecture gate, W4 local hosted-package/cache acceptance, W5 small end-to-end pipeline, and the completed W6 sub-gates above have passed. The product UI keeps fastp OFF by default and enables HISAT2 only as Experimental with a synthetic local catalog warning. One representative multi-GiB Kallisto run completed with measured Wasm linear-memory allocation high water. Production HISAT2 hosting/biology, Firefox, and Safari remain Web release blockers. Phase W6 Web release validation is in progress. Desktop D1/D2 engineering acceptance exists, but no signed or publicly approved desktop release exists.

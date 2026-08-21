@@ -114,6 +114,13 @@ Do not assume disabled code can be omitted from source-archive notices without c
 
 ## D2 native Kallisto sidecars
 
+Engineering evidence was generated successfully at commit
+`cbe1adff0a0b5b2af1b4b9dc730412648925c1de` by Windows run `32446706845` and
+Linux/macOS run `32446706737`. The uploaded target packages include the license
+files and hashes described below, together with source archives and generated
+compatibility patches. These artifacts are unsigned CI evidence, not an
+approved public distribution.
+
 - Native Kallisto remains pinned to version 0.52.0, commit
   `4e9f29cf3b021260415430c057a22469ca081391`, and BSD-2-Clause. Every binary
   package must reproduce the complete Kallisto license text in its bundled
@@ -144,7 +151,8 @@ Do not assume disabled code can be omitted from source-archive notices without c
   equivalent access.
 - The WebAssembly distribution obligations remain separate from this desktop
   package and still require their own production-hosting review.
-- D2 CI may produce unsigned NSIS, DMG, DEB, and AppImage test artifacts. They
+- D2 CI produced unsigned NSIS, DMG, DEB, and AppImage test artifacts in the
+  accepted runs. They
   are not public-release candidates until the relevant signing/notarization and
   legal release checks are completed.
 - Do not claim legal compliance based only on this engineering inventory.

@@ -12,7 +12,7 @@
 | Phase W5 | Complete for the small local-catalog Web gate | Typed SE/PE pipeline, raw gzip, optional fastp OFF/ON, HISAT2, featureCounts fragment semantics, TPM/matrices, exact arguments, outputs, cancellation, and cleanup passed in Chrome 151 |
 | Phase W6 | In progress; not release-complete | Chrome Kallisto fastp OFF/ON, cleanup/failure gates, and an instrumented 3.10 GB paired Arabidopsis Kallisto run passed. Kallisto Wasm linear-memory high water is now measured; production HISAT2 catalog/biology, eviction/recovery at production scale, Firefox, and Safari remain open. |
 | Desktop D1 | Complete on Windows x64 | Typed Tauri supervisor, verified fastp/HISAT2/hisat2-build/featureCounts sidecars, atomic index/results, TPM, orphan cleanup, and real-sidecar integration passed on merged `main` in Actions run `32437427175` (attempt 2). |
-| Desktop D2 | In progress | Native Kallisto execution/UI and platform-specific sidecar/unsigned-installer workflows are implemented locally; Windows x64, macOS arm64/x64, and Linux x64 D2 artifacts must pass clean CI before D2 is complete. Signing/notarization credentials remain external release blockers. |
+| Desktop D2 | Engineering acceptance complete | Native Kallisto execution/UI, exact golden regression, target manifests/licenses/source, real Tauri sidecar launches, and unsigned NSIS/DMG/DEB/AppImage builds passed in Windows run `32446706845` and cross-platform run `32446706737` at commit `cbe1adf`. Signing/notarization, legal approval, and release ownership remain external public-release blockers. |
 
 ## Next executable Web phases
 
