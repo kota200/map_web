@@ -207,7 +207,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "tauri-cli installation failed with $LASTEXITCODE" }
           Push-Location desktop\src-tauri
           try {
-            cargo tauri build --config tauri.windows.conf.json
+            cargo tauri build --features desktop --config tauri.windows.conf.json
             if ($LASTEXITCODE -ne 0) { throw "Unsigned NSIS build failed with $LASTEXITCODE" }
           } finally {
             Pop-Location

@@ -21,7 +21,6 @@ add_definitions(-DMAX_KMER_SIZE=${MAX_KMER_SIZE})
 add_definitions(-DMAX_GMER_SIZE=${MAX_GMER_SIZE})
 add_library(bifrost_static STATIC ${sources} ${headers})
 set_target_properties(bifrost_static PROPERTIES OUTPUT_NAME "bifrost")
-target_compile_options(bifrost_static PRIVATE $<$<COMPILE_LANGUAGE:C>:-fgnu89-inline>)
 target_include_directories(bifrost_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 find_package(Threads REQUIRED)
 target_link_libraries(bifrost_static PUBLIC Threads::Threads)
@@ -34,6 +33,20 @@ install(TARGETS Bifrost DESTINATION bin)
 install(TARGETS bifrost_static DESTINATION lib)
 install(FILES ${headers} DESTINATION include/bifrost)
 EOF
+
+roaring_header="$source_dir/ext/bifrost/src/roaring.h"
+roaring_source="$source_dir/ext/bifrost/src/roaring.c"
+sed -i \
+  's/^inline bool roaring_bitmap_contains(/static inline bool roaring_bitmap_contains(/' \
+  "$roaring_header"
+sed -i \
+  '/^extern inline bool roaring_bitmap_contains(/,/^[[:space:]]*uint32_t val);$/d' \
+  "$roaring_source"
+grep -Fq 'static inline bool roaring_bitmap_contains(' "$roaring_header"
+if grep -Fq 'extern inline bool roaring_bitmap_contains(' "$roaring_source"; then
+  echo 'Bifrost still contains the duplicate roaring_bitmap_contains definition' >&2
+  exit 1
+fi
 
 find "$source_dir/ext/bifrost" -type f \
   \( -name '*.cpp' -o -name '*.c' -o -name '*.h' -o -name '*.hpp' -o -name '*.tcc' \) \

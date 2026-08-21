@@ -135,9 +135,9 @@ jobs:
           Push-Location desktop/src-tauri
           try {
             if ('${{ runner.os }}' -eq 'Linux') {
-              cargo tauri build --config tauri.kallisto-only.conf.json --bundles deb,appimage
+              cargo tauri build --features desktop --config tauri.kallisto-only.conf.json --bundles deb,appimage
             } else {
-              cargo tauri build --config tauri.kallisto-only.conf.json --bundles dmg
+              cargo tauri build --features desktop --config tauri.kallisto-only.conf.json --bundles dmg
             }
             if ($LASTEXITCODE -ne 0) { throw "Unsigned Tauri bundle build failed with $LASTEXITCODE" }
           } finally {
